@@ -34,7 +34,7 @@ export default function Landing() {
                 <span className="w-2 h-2 bg-mantle rounded-full animate-pulse" />
                 System Online
               </span>
-              <span>//</span>
+              <span>{"//"}</span>
               <span>Mantle Network</span>
             </div>
             

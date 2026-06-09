@@ -22,6 +22,7 @@ typechain-types/
 coverage/
 coverage.json
 .openzeppelin/
+contracts/deployments/localhost.json
 
 # --- Environment and Private Variables ---
 .env

@@ -16,7 +16,7 @@ export default async function DashboardPage() {
               <span className="w-2 h-2 bg-mantle rounded-full animate-pulse" />
               Live Demo Console
             </span>
-            <span>//</span>
+            <span>{"//"}</span>
             <span>Agent Operations</span>
           </div>
           <h1 className="text-5xl font-medium text-white tracking-tighter leading-none">Dashboard</h1>

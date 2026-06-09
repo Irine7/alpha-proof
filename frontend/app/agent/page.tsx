@@ -14,7 +14,7 @@ export default async function AgentPage() {
               <span className="w-2 h-2 bg-mantle rounded-full animate-pulse" />
               Accountability Layer
             </span>
-            <span>//</span>
+            <span>{"//"}</span>
             <span>Verification Statistics</span>
           </div>
           <h1 className="text-5xl font-medium text-white tracking-tighter leading-none">Agent Reputation</h1>

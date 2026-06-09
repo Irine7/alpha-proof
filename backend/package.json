@@ -4,13 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "node scripts/prisma-generate.mjs --allow-locked-client",
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:generate": "node scripts/prisma-generate.mjs",
+    "db:push": "prisma db push --skip-generate"
   },
   "dependencies": {
     "@prisma/client": "^6.3.1",

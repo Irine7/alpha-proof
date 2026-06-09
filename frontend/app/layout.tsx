@@ -29,14 +29,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="w-2 h-2 bg-white" />
               <span className="text-white font-medium tracking-tight">ALPHAPROOF<span className="text-zinc-600">.AI</span></span>
             </Link>
-            <div className="flex items-center gap-8 text-sm text-zinc-400">
+            <div className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
               {nav.map((item) => (
                 <Link key={item.href} href={item.href} className="hover:text-white transition-colors">
                   {item.label}
                 </Link>
               ))}
             </div>
-            <Link href="/dashboard" className="text-xs font-mono uppercase bg-white text-black px-4 py-2 hover:bg-zinc-200 transition-colors">
+            <Link href="/dashboard" className="hidden text-xs font-mono uppercase bg-white text-black px-4 py-2 hover:bg-zinc-200 transition-colors sm:inline-block">
               Init App_
             </Link>
           </div>

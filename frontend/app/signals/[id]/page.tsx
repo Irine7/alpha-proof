@@ -31,7 +31,7 @@ export default async function SignalDetailPage({ params }: { params: { id: strin
         {/* Header Block */}
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start border-b border-white/10 pb-8">
           <div className="space-y-3">
-            <p className="text-xs font-mono uppercase tracking-widest text-zinc-500">// SIGNAL #{signal.id}</p>
+            <p className="text-xs font-mono uppercase tracking-widest text-zinc-500">{"//"} SIGNAL #{signal.id}</p>
             <h1 className="text-4xl font-medium tracking-tight text-white">{signal.signalType}</h1>
             <p className="text-lg text-zinc-400 font-light">
               {signal.asset} · <span className="font-mono text-sm text-zinc-500">{predictionLabel(signal.prediction)}</span> · {signal.confidence}% confidence

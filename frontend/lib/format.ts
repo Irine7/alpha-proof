@@ -20,6 +20,7 @@ export function predictionLabel(prediction: number) {
 
 export function explorerTxUrl(txHash?: string | null) {
   if (!txHash) return null;
-  const base = process.env.NEXT_PUBLIC_MANTLE_EXPLORER_URL || "https://explorer.testnet.mantle.xyz";
+  const base = process.env.NEXT_PUBLIC_MANTLE_EXPLORER_URL;
+  if (!base || !process.env.NEXT_PUBLIC_SIGNAL_REGISTRY_ADDRESS) return null;
   return `${base}/tx/${txHash}`;
 }

@@ -9,6 +9,8 @@
     "check": "pnpm --recursive check",
     "contracts:test": "pnpm --filter @alphaproof/contracts test",
     "contracts:deploy": "pnpm --filter @alphaproof/contracts deploy",
+    "contracts:deploy:local": "pnpm --filter @alphaproof/contracts deploy:local",
+    "contracts:read:local": "pnpm --filter @alphaproof/contracts read:local",
     "backend:db": "pnpm --filter @alphaproof/backend db:push"
   },
   "engines": {

@@ -1,5 +1,5 @@
 import { Telegraf } from "telegraf";
-import { config, hasTelegramEnv } from "../config.js";
+import { config, hasChainEnv, hasTelegramEnv } from "../config.js";
 import { getAgentStats, getLatestSignals } from "../db/signals.js";
 import type { SignalOutcome } from "../types.js";
 
@@ -11,9 +11,14 @@ function predictionLabel(prediction: number) {
   return "Neutral signal: monitor for confirmation.";
 }
 
-function proofUrl(txHash?: string | null) {
+function shortHash(value: string) {
+  return `${value.slice(0, 10)}...${value.slice(-8)}`;
+}
+
+function proofText(txHash?: string | null) {
   if (!txHash) return "Mock proof: local demo mode";
-  return `${config.mantleExplorerUrl}/tx/${txHash}`;
+  if (!hasChainEnv()) return `Mock proof hash: ${shortHash(txHash)}`;
+  return `Mantle tx: ${config.mantleExplorerUrl}/tx/${txHash}`;
 }
 
 export function formatSignalAlert(signal: {
@@ -40,7 +45,7 @@ export function formatSignalAlert(signal: {
     predictionLabel(signal.prediction),
     "",
     "Proof:",
-    `Mantle tx: ${proofUrl(signal.commitTxHash)}`,
+    proofText(signal.commitTxHash),
     "",
     "Status:",
     signal.status === "Pending" ? "Pending evaluation" : `Resolved: ${signal.outcome}`

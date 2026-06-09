@@ -11,7 +11,7 @@ export function SignalCard({ signal }: { signal: Signal }) {
       <div>
         <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
           <div>
-            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">// {signal.signalType}</p>
+            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{"//"} {signal.signalType}</p>
             <h3 className="mt-2 text-2xl font-medium text-white tracking-tight">{signal.asset}</h3>
           </div>
           <StatusBadge status={signal.status} outcome={signal.outcome} />
@@ -37,6 +37,8 @@ export function SignalCard({ signal }: { signal: Signal }) {
               <a href={txUrl} target="_blank" rel="noreferrer" className="font-mono text-xs text-white hover:text-mantle transition-colors block truncate underline">
                 {shortHash(signal.commitTxHash)}
               </a>
+            ) : signal.commitTxHash ? (
+              <p className="text-xs font-mono text-zinc-400 truncate">{shortHash(signal.commitTxHash)} · Hash</p>
             ) : (
               <p className="text-xs font-mono text-zinc-600">Pending</p>
             )}

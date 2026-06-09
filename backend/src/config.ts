@@ -4,7 +4,8 @@ dotenv.config();
 
 export const config = {
   port: Number(process.env.PORT || 4000),
-  databaseUrl: process.env.DATABASE_URL || "file:./dev.db",
+  databaseUrl: process.env.DATABASE_URL || "",
+  chainMode: process.env.CHAIN_MODE || "auto",
   signalRegistryAddress: process.env.SIGNAL_REGISTRY_ADDRESS || "",
   mantleRpcUrl: process.env.MANTLE_RPC_URL || "",
   agentPrivateKey: process.env.AGENT_PRIVATE_KEY || "",
@@ -15,6 +16,7 @@ export const config = {
 };
 
 export function hasChainEnv() {
+  if (config.chainMode === "mock") return false;
   return Boolean(config.signalRegistryAddress && config.mantleRpcUrl && config.agentPrivateKey);
 }
 

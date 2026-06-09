@@ -13,13 +13,22 @@ function chooseDemoOutcome(signal: Signal): SignalOutcome {
 export async function resolvePendingDemoSignals() {
   const pending = await getPendingSignals();
   const results = [];
+  const skipped = [];
 
   for (const signal of pending) {
     const outcome = chooseDemoOutcome(signal);
-    const chainResult = await resolveSignalOnChain(signal.chainSignalId ?? signal.id, outcome);
-    const updated = await markSignalResolved(signal.id, outcome, chainResult.txHash);
-    results.push({ signal: updated, mocked: chainResult.mocked });
+    try {
+      const chainResult = await resolveSignalOnChain(signal.chainSignalId ?? signal.id, outcome);
+      const updated = await markSignalResolved(signal.id, outcome, chainResult.txHash);
+      results.push({ signal: updated, mocked: chainResult.mocked });
+    } catch (error) {
+      skipped.push({
+        signalId: signal.id,
+        chainSignalId: signal.chainSignalId,
+        reason: error instanceof Error ? error.message : "Unknown chain resolve error"
+      });
+    }
   }
 
-  return results;
+  return { results, skipped };
 }

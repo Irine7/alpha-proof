@@ -24,7 +24,14 @@ export function createServer() {
 
   app.get("/api/signals/:id", async (req, res, next) => {
     try {
-      const signal = await getSignalById(Number(req.params.id));
+      const id = Number(req.params.id);
+
+      if (!Number.isInteger(id) || id < 1) {
+        res.status(400).json({ error: "Invalid signal id" });
+        return;
+      }
+
+      const signal = await getSignalById(id);
       if (!signal) {
         res.status(404).json({ error: "Signal not found" });
         return;
@@ -54,8 +61,8 @@ export function createServer() {
 
   app.post("/api/demo/resolve-pending", async (_req, res, next) => {
     try {
-      const results = await resolvePendingDemoSignals();
-      res.json({ resolved: results.length, results });
+      const { results, skipped } = await resolvePendingDemoSignals();
+      res.json({ resolved: results.length, skipped: skipped.length, results, skippedSignals: skipped });
     } catch (error) {
       next(error);
     }

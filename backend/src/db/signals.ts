@@ -1,41 +1,66 @@
 import type { Prisma } from "../generated/prisma/index.js";
 import { prisma } from "./prisma.js";
 
+async function withDbRetry<T>(operation: () => Promise<T>, attempts = 2): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const isTransientConnectionError =
+      message.includes("Can't reach database server") ||
+      message.includes("Timed out fetching a new connection") ||
+      message.includes("Connection terminated unexpectedly");
+
+    if (attempts <= 1 || !isTransientConnectionError) {
+      throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    return withDbRetry(operation, attempts - 1);
+  }
+}
+
 export async function createSignal(data: Prisma.SignalCreateInput) {
-  return prisma.signal.create({ data });
+  return withDbRetry(() => prisma.signal.create({ data }));
 }
 
 export async function getLatestSignals(limit = 25) {
-  return prisma.signal.findMany({
-    orderBy: { createdAt: "desc" },
-    take: limit
-  });
+  return withDbRetry(() =>
+    prisma.signal.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit
+    })
+  );
 }
 
 export async function getSignalById(id: number) {
-  return prisma.signal.findUnique({ where: { id } });
+  return withDbRetry(() => prisma.signal.findUnique({ where: { id } }));
 }
 
 export async function getPendingSignals() {
-  return prisma.signal.findMany({
-    where: { status: "Pending" },
-    orderBy: { createdAt: "asc" }
-  });
+  return withDbRetry(() =>
+    prisma.signal.findMany({
+      where: { status: "Pending" },
+      orderBy: { createdAt: "asc" }
+    })
+  );
 }
 
 export async function markSignalResolved(id: number, outcome: string, resolveTxHash: string) {
-  return prisma.signal.update({
-    where: { id },
-    data: {
-      status: "Resolved",
-      outcome,
-      resolveTxHash
-    }
-  });
+  return withDbRetry(() =>
+    prisma.signal.update({
+      where: { id },
+      data: {
+        status: "Resolved",
+        outcome,
+        resolveTxHash
+      }
+    })
+  );
 }
 
 export async function getAgentStats() {
-  const signals = await prisma.signal.findMany();
+  const signals = await withDbRetry(() => prisma.signal.findMany());
   const totalSignals = signals.length;
   const resolved = signals.filter((signal) => signal.status === "Resolved");
   const correct = resolved.filter((signal) => signal.outcome === "Correct").length;

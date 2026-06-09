@@ -6,7 +6,9 @@
     "build": "hardhat compile",
     "check": "hardhat compile",
     "test": "hardhat test",
-    "deploy": "hardhat run scripts/deploy.ts --network mantleTestnet"
+    "deploy": "hardhat run scripts/deploy.ts --network mantleTestnet",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "read:local": "hardhat run scripts/read-signal.ts --network localhost"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
