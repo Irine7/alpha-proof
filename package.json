@@ -1,0 +1,19 @@
+{
+  "name": "alphaproof-ai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Verifiable AI alpha agent for Mantle Network hackathon MVP.",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @alphaproof/backend --filter @alphaproof/frontend dev",
+    "build": "pnpm --recursive build",
+    "check": "pnpm --recursive check",
+    "contracts:test": "pnpm --filter @alphaproof/contracts test",
+    "contracts:deploy": "pnpm --filter @alphaproof/contracts deploy",
+    "backend:db": "pnpm --filter @alphaproof/backend db:push"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.4"
+}
