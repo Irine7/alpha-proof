@@ -1,27 +1,20 @@
-"use client";
-
-import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ArrowRight, 
   ShieldCheck, 
-  GitGraph, 
   Terminal, 
   Database, 
   Cpu, 
   CheckCircle2
 } from 'lucide-react';
+import { LocalClock } from "../components/LocalClock";
+import { getRuntimeStatus, getSignals, getStats } from "../lib/api";
+import { predictionLabel, shortHash } from "../lib/format";
 
-export default function Landing() {
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    setTime(new Date().toISOString().split('T')[1].slice(0, 8));
-    const timer = setInterval(() => {
-      setTime(new Date().toISOString().split('T')[1].slice(0, 8));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+export default async function Landing() {
+  const [signals, stats, runtime] = await Promise.all([getSignals(), getStats(), getRuntimeStatus()]);
+  const latestSignal = signals[0] || null;
+  const tickerSignals = signals.length ? [...signals.slice(0, 5), ...signals.slice(0, 5)] : [];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-white selection:text-black">
@@ -32,10 +25,10 @@ export default function Landing() {
             <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-wider text-zinc-500">
               <span className="flex items-center gap-2 text-mantle">
                 <span className="w-2 h-2 bg-mantle rounded-full animate-pulse" />
-                System Online
+                Live Interface
               </span>
               <span>{"//"}</span>
-              <span>Mantle Network</span>
+              <span>{runtime.chainModeLabel}</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-medium text-white tracking-tighter leading-[1.05]">
@@ -44,7 +37,7 @@ export default function Landing() {
             </h1>
             
             <p className="max-w-xl text-lg text-zinc-400 leading-relaxed font-light">
-              DeFi anomaly detection infrastructure. The agent finds alpha, performs a cryptographic commit prior to the event, and proves its mathematical accuracy
+              DeFi anomaly detection infrastructure. This page reads live backend data: signals created by the agent, committed through SignalRegistry, and stored in Neon PostgreSQL
             </p>
 
             <div className="flex flex-wrap gap-4 pt-4">
@@ -59,16 +52,16 @@ export default function Landing() {
 
           <div className="lg:col-span-4 border-l border-white/10 pl-6 space-y-6 hidden lg:block">
             <div className="space-y-1">
-              <div className="text-[10px] font-mono text-zinc-500">LATEST EPOCH CONFIDENCE</div>
-              <div className="text-3xl font-light text-white">94.2%</div>
+              <div className="text-[10px] font-mono text-zinc-500">AVG SIGNAL CONFIDENCE</div>
+              <div className="text-3xl font-light text-white">{stats.averageConfidence}%</div>
             </div>
             <div className="space-y-1">
-              <div className="text-[10px] font-mono text-zinc-500">ANOMALIES DETECTED (24H)</div>
-              <div className="text-3xl font-light text-white">1,204</div>
+              <div className="text-[10px] font-mono text-zinc-500">SIGNALS IN NEON</div>
+              <div className="text-3xl font-light text-white">{stats.totalSignals}</div>
             </div>
             <div className="space-y-1">
-              <div className="text-[10px] font-mono text-zinc-500">SYSTEM TIME (UTC)</div>
-              <div className="text-3xl font-light text-white font-mono">{time || "00:00:00"}</div>
+              <div className="text-[10px] font-mono text-zinc-500">LOCAL SYSTEM TIME</div>
+              <div className="text-3xl font-light text-white font-mono"><LocalClock /></div>
             </div>
           </div>
         </div>
@@ -76,13 +69,15 @@ export default function Landing() {
         {/* Technical Ticker */}
         <div className="mt-20 border-y border-white/10 flex overflow-hidden bg-white/[0.02]">
           <div className="flex whitespace-nowrap animate-marquee py-3 text-xs font-mono text-zinc-500">
-            <span className="mx-4">TX: 0x8a...4f2a [DETECTED: WHALE_ACCUMULATION]</span> |
-            <span className="mx-4">TX: 0x1b...9c33 [DETECTED: LIQUIDITY_DRAIN]</span> |
-            <span className="mx-4 text-mantle">EPOCH #42 COMMIT VERIFIED</span> |
-            <span className="mx-4">TX: 0x9f...11b8 [DETECTED: FLASH_LOAN_PREP]</span> |
-            <span className="mx-4">TX: 0x8a...4f2a [DETECTED: WHALE_ACCUMULATION]</span> |
-            <span className="mx-4">TX: 0x1b...9c33 [DETECTED: LIQUIDITY_DRAIN]</span> |
-            <span className="mx-4 text-mantle">EPOCH #42 COMMIT VERIFIED</span>
+            {tickerSignals.length ? (
+              tickerSignals.map((signal, index) => (
+                <span key={`${signal.id}-${index}`} className={signal.status === "Resolved" ? "mx-4 text-mantle" : "mx-4"}>
+                  TX: {shortHash(signal.commitTxHash)} [{signal.status.toUpperCase()}: {signal.signalType.toUpperCase().replaceAll(" ", "_")}]
+                </span>
+              ))
+            ) : (
+              <span className="mx-4 text-mantle">NO LIVE SIGNALS YET - OPEN DASHBOARD AND CREATE ONE</span>
+            )}
           </div>
         </div>
 
@@ -154,28 +149,42 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Brutalist Terminal Mockup */}
-            <div className="bg-[#050505] border border-zinc-800 p-1 flex flex-col font-mono text-xs">
-              <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex justify-between items-center text-zinc-500">
-                <span>alphaproof-node-01</span>
-                <span className="flex gap-1">
-                  <div className="w-2 h-2 bg-zinc-700 rounded-full" />
-                  <div className="w-2 h-2 bg-zinc-700 rounded-full" />
-                  <div className="w-2 h-2 bg-zinc-700 rounded-full" />
+            {/* Live Signal Terminal */}
+            <div className="overflow-hidden rounded-lg border border-zinc-800 bg-[#050505] font-mono text-xs shadow-2xl shadow-black/40">
+              <div className="grid h-11 grid-cols-[auto_1fr_auto] items-center border-b border-zinc-800 bg-[#18181b] px-4 text-zinc-500">
+                <span className="flex items-center gap-2" aria-hidden>
+                  <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-[#ff5f57] text-[10px] leading-none text-red-950">x</span>
+                  <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-[#febc2e] text-[10px] leading-none text-yellow-950">-</span>
+                  <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-[#28c840] text-[10px] leading-none text-green-950">-</span>
                 </span>
+                <span className="justify-self-center text-[11px] uppercase tracking-[0.18em] text-zinc-400">live_signal_trace</span>
+                <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">Neon / Chain</span>
               </div>
-              <div className="p-4 space-y-2 overflow-hidden h-[300px] text-zinc-400 flex flex-col justify-end">
-                <div className="opacity-50">&gt; Indexing block 14205510... OK</div>
-                <div className="opacity-50">&gt; Indexing block 14205511... OK</div>
-                <div>&gt; WARN: Anomaly detected in pool 0x4A...21f. Severity: HIGH</div>
-                <div>&gt; Generating inference matrix...</div>
-                <div className="text-white">&gt; SIGNAL: MNT/USDC accumulation pattern</div>
-                <div>&gt; Confidence score: 0.942</div>
-                <div className="py-2">
-                  <div className="text-mantle">✓ Committing to Mantle Network...</div>
-                  <div className="text-zinc-500">  Tx: 0x7f9a2b...3a9b1c</div>
-                  <div className="text-zinc-500">  Hash: 0x88f219...110a</div>
-                </div>
+              <div className="flex h-[300px] flex-col justify-end space-y-2 overflow-hidden bg-black p-5 text-zinc-400">
+                {latestSignal ? (
+                  <>
+                    <div className="opacity-50">&gt; Runtime: {runtime.chainModeLabel}</div>
+                    <div className="opacity-50">&gt; Loading latest Neon signal... OK</div>
+                    <div>&gt; WARN: {latestSignal.signalType} detected for {latestSignal.asset}</div>
+                    <div>&gt; Prediction: {predictionLabel(latestSignal.prediction)}</div>
+                    <div className="text-white">&gt; SIGNAL: {latestSignal.asset} / {latestSignal.signalType}</div>
+                    <div>&gt; Confidence score: {(latestSignal.confidence / 100).toFixed(2)}</div>
+                    <div className="py-2">
+                      <div className={latestSignal.status === "Resolved" ? "text-mantle" : "text-amber-300"}>
+                        {latestSignal.status === "Resolved" ? "✓ Resolved on current record" : "• Pending evaluation"}
+                      </div>
+                      <div className="text-zinc-500">  Chain id: {latestSignal.chainSignalId ?? "mock/local fallback"}</div>
+                      <div className="text-zinc-500">  Tx: {shortHash(latestSignal.commitTxHash)}</div>
+                      <div className="text-zinc-500">  Reasoning: {shortHash(latestSignal.reasoningHash)}</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="opacity-50">&gt; Runtime: {runtime.chainModeLabel}</div>
+                    <div>&gt; No backend signals found</div>
+                    <div className="text-mantle">&gt; Open Dashboard and create the first demo signal</div>
+                  </>
+                )}
                 <div className="animate-pulse">&gt; _</div>
               </div>
             </div>
@@ -192,7 +201,7 @@ export default function Landing() {
           </div>
           <div className="flex gap-6">
             <a href="https://github.com/placeholder/alphaproof-ai" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-2">GitHub</a>
-            <a href="https://t.me/placeholder" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Telegram</a>
+            <span className="text-zinc-700">Telegram planned</span>
             <a href="#" className="hover:text-white transition-colors">Docs</a>
           </div>
           <div>DEPLOYED ON MANTLE</div>

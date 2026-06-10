@@ -1,5 +1,5 @@
 import { Telegraf } from "telegraf";
-import { config, hasChainEnv, hasTelegramEnv } from "../config.js";
+import { config, hasTelegramEnv, shouldUseMockChain } from "../config.js";
 import { getAgentStats, getLatestSignals } from "../db/signals.js";
 import type { SignalOutcome } from "../types.js";
 
@@ -17,7 +17,7 @@ function shortHash(value: string) {
 
 function proofText(txHash?: string | null) {
   if (!txHash) return "Mock proof: local demo mode";
-  if (!hasChainEnv()) return `Mock proof hash: ${shortHash(txHash)}`;
+  if (shouldUseMockChain()) return `Mock proof hash: ${shortHash(txHash)}`;
   return `Mantle tx: ${config.mantleExplorerUrl}/tx/${txHash}`;
 }
 

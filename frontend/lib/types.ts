@@ -36,3 +36,34 @@ export type AgentStats = {
   bestSignalType: string | null;
   worstSignalType: string | null;
 };
+
+export type RuntimeStatus = {
+  chainMode: string;
+  chainModeLabel: string;
+  isMock: boolean;
+  isOnChain: boolean;
+  rpcTarget: string;
+  signalRegistryAddress: string | null;
+  hasAgentPrivateKey: boolean;
+};
+
+export type CreateDemoResponse = {
+  signal: Signal;
+  event: unknown;
+  mockedChain: boolean;
+};
+
+export type ResolvePendingResponse = {
+  resolved: number;
+  skipped: number;
+  results: Array<{
+    signal: Signal;
+    mocked: boolean;
+    synced?: boolean;
+  }>;
+  skippedSignals: Array<{
+    signalId: number;
+    chainSignalId: number | null;
+    reason: string;
+  }>;
+};

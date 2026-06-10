@@ -4,6 +4,7 @@ import { ethers, network } from "hardhat";
 
 type Deployment = {
   address?: string;
+  signalRegistry?: string;
 };
 
 function getSignalId() {
@@ -26,11 +27,13 @@ function getRegistryAddress() {
 
   const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8")) as Deployment;
 
-  if (!deployment.address) {
+  const address = deployment.signalRegistry || deployment.address;
+
+  if (!address) {
     throw new Error(`Deployment file ${deploymentPath} does not contain an address`);
   }
 
-  return deployment.address;
+  return address;
 }
 
 async function main() {

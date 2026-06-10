@@ -14,8 +14,9 @@ async function saveDeployment(address: string, txHash?: string) {
       {
         contract: "SignalRegistry",
         address,
+        signalRegistry: address,
         network: network.name,
-        chainId: chain.chainId.toString(),
+        chainId: Number(chain.chainId),
         txHash: txHash || null,
         deployedAt: new Date().toISOString()
       },

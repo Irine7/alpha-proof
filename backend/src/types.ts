@@ -47,3 +47,15 @@ export type ChainResolveResult = {
   txHash: string;
   mocked: boolean;
 };
+
+export type ChainSignalRead = {
+  id: number;
+  signalType: string;
+  asset: string;
+  reasoningHash: string;
+  dataHash: string;
+  confidence: number;
+  prediction: number;
+  status: SignalStatus;
+  outcome: SignalOutcome;
+};

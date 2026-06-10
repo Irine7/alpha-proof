@@ -62,6 +62,12 @@ AI_PROVIDER="mock"
 OPENAI_API_KEY=""
 ```
 
+`CHAIN_MODE` options:
+
+- `auto`: use chain env when complete, otherwise use mock proof hashes.
+- `local`, `onchain`, or `real`: require chain env and fail instead of mocking.
+- `mock`: force mock proof hashes.
+
 Validate Prisma:
 
 ```bash
@@ -137,7 +143,7 @@ For local end-to-end testing with Neon plus Hardhat, set `backend/.env`:
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/DB?sslmode=require"
 PORT=4000
-CHAIN_MODE="auto"
+CHAIN_MODE="local"
 SIGNAL_REGISTRY_ADDRESS="0xLOCAL_DEPLOYED_SIGNAL_REGISTRY"
 MANTLE_RPC_URL="http://127.0.0.1:8545"
 AGENT_PRIVATE_KEY="LOCAL_HARDHAT_ACCOUNT_PRIVATE_KEY"
@@ -151,7 +157,7 @@ cd backend
 pnpm dev
 ```
 
-If chain env is missing, the backend falls back to local mock proof hashes. For real local contract commits, keep `CHAIN_MODE="auto"` and provide the local Hardhat RPC, contract address, and local Hardhat private key.
+If chain env is missing in `auto`, the backend falls back to local mock proof hashes. For real local contract commits, use `CHAIN_MODE="local"` and provide the local Hardhat RPC, contract address, and local Hardhat private key. In `local` mode, a missing or wrong contract address returns an error instead of creating a fake proof.
 
 ## Frontend
 

@@ -4,6 +4,7 @@ import { getAgentStats, getLatestSignals, getSignalById } from "../db/signals.js
 import { createDemoSignal } from "../agent/orchestrator.js";
 import { resolvePendingDemoSignals } from "../agent/evaluators/demoEvaluator.js";
 import type { DemoEventKind } from "../types.js";
+import { chainRuntimeStatus } from "../config.js";
 
 export function createServer() {
   const app = express();
@@ -12,6 +13,10 @@ export function createServer() {
 
   app.get("/health", (_req, res) => {
     res.json({ ok: true, service: "alphaproof-backend" });
+  });
+
+  app.get("/api/runtime", (_req, res) => {
+    res.json(chainRuntimeStatus());
   });
 
   app.get("/api/signals", async (_req, res, next) => {

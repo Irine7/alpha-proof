@@ -46,14 +46,14 @@ export async function getPendingSignals() {
   );
 }
 
-export async function markSignalResolved(id: number, outcome: string, resolveTxHash: string) {
+export async function markSignalResolved(id: number, outcome: string, resolveTxHash?: string | null) {
   return withDbRetry(() =>
     prisma.signal.update({
       where: { id },
       data: {
         status: "Resolved",
         outcome,
-        resolveTxHash
+        ...(resolveTxHash ? { resolveTxHash } : {})
       }
     })
   );

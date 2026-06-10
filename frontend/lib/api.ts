@@ -1,4 +1,4 @@
-import type { AgentStats, Signal } from "./types";
+import type { AgentStats, CreateDemoResponse, ResolvePendingResponse, RuntimeStatus, Signal } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -54,10 +54,26 @@ export async function getStats(): Promise<AgentStats> {
   }
 }
 
-export async function createDemoSignal() {
-  return apiFetch("/api/demo/create-signal", { method: "POST", body: "{}" });
+export async function getRuntimeStatus(): Promise<RuntimeStatus> {
+  try {
+    return await apiFetch<RuntimeStatus>("/api/runtime");
+  } catch {
+    return {
+      chainMode: "unknown",
+      chainModeLabel: "backend unavailable",
+      isMock: true,
+      isOnChain: false,
+      rpcTarget: "unavailable",
+      signalRegistryAddress: null,
+      hasAgentPrivateKey: false
+    };
+  }
 }
 
-export async function resolvePendingSignals() {
-  return apiFetch("/api/demo/resolve-pending", { method: "POST", body: "{}" });
+export async function createDemoSignal(): Promise<CreateDemoResponse> {
+  return apiFetch<CreateDemoResponse>("/api/demo/create-signal", { method: "POST", body: "{}" });
+}
+
+export async function resolvePendingSignals(): Promise<ResolvePendingResponse> {
+  return apiFetch<ResolvePendingResponse>("/api/demo/resolve-pending", { method: "POST", body: "{}" });
 }

@@ -1,10 +1,11 @@
 import { DemoControls } from "../../components/DemoControls";
+import { RuntimeStatusPanel } from "../../components/RuntimeStatusPanel";
 import { SignalCard } from "../../components/SignalCard";
 import { StatCard } from "../../components/StatCard";
-import { getSignals, getStats } from "../../lib/api";
+import { getRuntimeStatus, getSignals, getStats } from "../../lib/api";
 
 export default async function DashboardPage() {
-  const [signals, stats] = await Promise.all([getSignals(), getStats()]);
+  const [signals, stats, runtime] = await Promise.all([getSignals(), getStats(), getRuntimeStatus()]);
 
   return (
     <main className="relative z-10 pt-32 pb-20 max-w-[1400px] mx-auto px-6">
@@ -21,13 +22,15 @@ export default async function DashboardPage() {
           </div>
           <h1 className="text-5xl font-medium text-white tracking-tighter leading-none">Dashboard</h1>
           <p className="max-w-2xl text-zinc-400 font-light leading-relaxed">
-            AI makes a prediction, commits hashes on-chain, alerts Telegram, then resolves outcomes into reputation. The local fallback uses mock proofs until Mantle env vars are configured
+            AI makes a prediction, commits hashes through the chain client, stores the result in Neon, then resolves outcomes into reputation. The runtime panel below shows whether this session is mock or local on-chain
           </p>
         </div>
         <div className="w-full lg:w-auto">
           <DemoControls />
         </div>
       </div>
+
+      <RuntimeStatusPanel runtime={runtime} />
 
       {/* Stats Bento Grid */}
       <section className="mb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-white/10 bg-[#0a0a0a] divide-y sm:divide-y-0 sm:divide-x divide-white/10">
