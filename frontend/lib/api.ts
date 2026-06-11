@@ -13,7 +13,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    let message = `API request failed: ${response.status}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      // Keep the generic HTTP message.
+    }
+    throw new Error(message);
   }
 
   return response.json() as Promise<T>;
@@ -49,7 +56,8 @@ export async function getStats(): Promise<AgentStats> {
       accuracy: 0,
       averageConfidence: 0,
       bestSignalType: null,
-      worstSignalType: null
+      worstSignalType: null,
+      hasSignalDiversity: false
     };
   }
 }
@@ -60,12 +68,21 @@ export async function getRuntimeStatus(): Promise<RuntimeStatus> {
   } catch {
     return {
       chainMode: "unknown",
+      marketDataMode: "demo",
       chainModeLabel: "backend unavailable",
+      proofNetwork: "Unknown",
+      proofNetworkLabel: "Backend unavailable",
+      marketDataSource: "Unavailable",
       isMock: true,
       isOnChain: false,
       rpcTarget: "unavailable",
       signalRegistryAddress: null,
-      hasAgentPrivateKey: false
+      hasAgentPrivateKey: false,
+      proofExplorerUrl: null,
+      contractExplorerUrl: null,
+      txExplorerBaseUrl: null,
+      lastSourceEvent: null,
+      lastProofTx: null
     };
   }
 }

@@ -18,9 +18,24 @@ export function predictionLabel(prediction: number) {
   return "Neutral watch";
 }
 
-export function explorerTxUrl(txHash?: string | null) {
+export function formatUsd(value?: number | null) {
+  if (value === null || value === undefined) return "Not available";
+  return new Intl.NumberFormat("en", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+}
+
+export function formatMode(value?: string | null) {
+  if (!value) return "Not available";
+  return value.replaceAll("_", " ");
+}
+
+export function minutesUntil(value: string) {
+  const diff = new Date(value).getTime() - Date.now();
+  if (diff <= 0) return "due now";
+  return `${Math.ceil(diff / 60000)} min`;
+}
+
+export function explorerTxUrl(txHash?: string | null, txExplorerBaseUrl?: string | null) {
   if (!txHash) return null;
-  const base = process.env.NEXT_PUBLIC_MANTLE_EXPLORER_URL;
-  if (!base || !process.env.NEXT_PUBLIC_SIGNAL_REGISTRY_ADDRESS) return null;
-  return `${base}/tx/${txHash}`;
+  if (!txExplorerBaseUrl) return null;
+  return `${txExplorerBaseUrl}/${txHash}`;
 }

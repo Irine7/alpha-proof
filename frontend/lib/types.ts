@@ -8,6 +8,18 @@ export type Signal = {
   asset: string;
   wallet: string | null;
   pool: string | null;
+  marketDataMode: string;
+  sourceChain: string | null;
+  sourceTxHash: string | null;
+  sourceBlockNumber: string | null;
+  sourceWallet: string | null;
+  sourceProtocol: string | null;
+  sourcePool: string | null;
+  counterAsset: string | null;
+  usdValue: number | null;
+  sourceEventType: string | null;
+  detectedAt: string | null;
+  rawEventJson: string | null;
   confidence: number;
   prediction: number;
   aiSummary: string;
@@ -18,6 +30,9 @@ export type Signal = {
   status: SignalStatus;
   outcome: SignalOutcome;
   commitTxHash: string | null;
+  commitBlockNumber: string | null;
+  committedAt: string | null;
+  contractAddress: string | null;
   resolveTxHash: string | null;
   createdAt: string;
   evaluationTime: string;
@@ -35,22 +50,39 @@ export type AgentStats = {
   averageConfidence: number;
   bestSignalType: string | null;
   worstSignalType: string | null;
+  hasSignalDiversity: boolean;
 };
 
 export type RuntimeStatus = {
   chainMode: string;
+  marketDataMode: string;
   chainModeLabel: string;
+  proofNetwork: string;
+  proofNetworkLabel: string;
+  marketDataSource: string;
   isMock: boolean;
   isOnChain: boolean;
   rpcTarget: string;
   signalRegistryAddress: string | null;
   hasAgentPrivateKey: boolean;
+  proofExplorerUrl: string | null;
+  contractExplorerUrl: string | null;
+  txExplorerBaseUrl: string | null;
+  lastSourceEvent: {
+    eventType: string | null;
+    asset: string;
+    sourceChain: string | null;
+    txHash: string | null;
+    detectedAt: string | null;
+  } | null;
+  lastProofTx: string | null;
 };
 
 export type CreateDemoResponse = {
   signal: Signal;
   event: unknown;
   mockedChain: boolean;
+  marketDataSource: string;
 };
 
 export type ResolvePendingResponse = {

@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StatusBadge } from "../../../components/StatusBadge";
-import { explorerTxUrl, formatDate, predictionLabel, shortHash } from "../../../lib/format";
-import { getSignal } from "../../../lib/api";
+import { explorerTxUrl, formatDate, formatMode, formatUsd, predictionLabel, shortHash } from "../../../lib/format";
+import { getRuntimeStatus, getSignal } from "../../../lib/api";
 import { ArrowLeft, Terminal } from "lucide-react";
+import { CopyButton } from "../../../components/CopyButton";
 
-export default async function SignalDetailPage({ params }: { params: { id: string } }) {
-  const signal = await getSignal(params.id);
+export default async function SignalDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [signal, runtime] = await Promise.all([getSignal(id), getRuntimeStatus()]);
 
   if (!signal) {
     notFound();
   }
 
-  const commitUrl = explorerTxUrl(signal.commitTxHash);
-  const resolveUrl = explorerTxUrl(signal.resolveTxHash);
+  const commitUrl = explorerTxUrl(signal.commitTxHash, runtime.txExplorerBaseUrl);
+  const resolveUrl = explorerTxUrl(signal.resolveTxHash, runtime.txExplorerBaseUrl);
 
   return (
     <main className="relative z-10 pt-32 pb-20 max-w-[1000px] mx-auto px-6">
@@ -44,10 +46,25 @@ export default async function SignalDetailPage({ params }: { params: { id: strin
 
         {/* Info Bento Grid */}
         <section className="grid gap-px bg-white/10 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 border border-white/10 overflow-hidden">
+          <Info label="Signal ID" value={signal.id} />
           <Info label="Chain signal ID" value={signal.chainSignalId ?? "Mock/local"} />
+          <Info label="Proof network" value={runtime.proofNetwork} />
           <Info label="Evaluation time" value={formatDate(signal.evaluationTime)} />
-          <Info label="Wallet" value={signal.wallet || "Not applicable"} />
-          <Info label="Pool" value={signal.pool || "Not applicable"} />
+          <Info label="Outcome" value={signal.outcome} />
+          <Info label="Committed block/time" value={signal.commitBlockNumber ? `${signal.commitBlockNumber} · ${signal.committedAt ? formatDate(signal.committedAt) : "time pending"}` : "Local/mock timestamp"} />
+          <Info label="Contract address" value={signal.contractAddress || runtime.signalRegistryAddress || "Not configured"} />
+          <Info label="Market source" value={formatMode(signal.marketDataMode)} />
+        </section>
+
+        <section className="grid gap-px bg-white/10 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 border border-white/10 overflow-hidden">
+          <Info label="Source chain" value={signal.sourceChain || "Not available"} />
+          <Info label="Source tx hash" value={signal.sourceTxHash || "Not available"} />
+          <Info label="Source wallet" value={signal.sourceWallet || signal.wallet || "Not applicable"} />
+          <Info label="Protocol / pool" value={`${signal.sourceProtocol || "Unknown"} / ${signal.sourcePool || signal.pool || "Unknown"}`} />
+          <Info label="Block number" value={signal.sourceBlockNumber || "Not available"} />
+          <Info label="Event type" value={signal.sourceEventType || "Not available"} />
+          <Info label="USD value" value={formatUsd(signal.usdValue)} />
+          <Info label="Asset pair" value={signal.counterAsset ? `${signal.asset}/${signal.counterAsset}` : signal.asset} />
         </section>
 
         {/* AI Summary */}
@@ -102,6 +119,16 @@ export default async function SignalDetailPage({ params }: { params: { id: strin
             </pre>
           </div>
         </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">Raw Event JSON</h2>
+          <div className="bg-[#050505] border border-zinc-800 p-1 flex flex-col font-mono text-xs">
+            <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 text-zinc-500">raw_event.json</div>
+            <pre className="p-4 overflow-x-auto text-zinc-400 leading-relaxed max-h-[300px]">
+              {signal.rawEventJson || "Not available"}
+            </pre>
+          </div>
+        </section>
       </div>
     </main>
   );
@@ -117,16 +144,24 @@ function Info({ label, value }: { label: string; value: string | number }) {
 }
 
 function Proof({ label, value, href }: { label: string; value?: string | null; href?: string | null }) {
+  const isTx = label.toLowerCase().includes("tx");
+
   return (
     <div className="border border-white/10 bg-[#0a0a0a] p-5 space-y-1">
       <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{label}</p>
       {value ? (
         href ? (
-          <a href={href} target="_blank" rel="noreferrer" className="font-mono text-xs text-white hover:text-mantle transition-colors block underline">
-            {shortHash(value)}
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a href={href} target="_blank" rel="noreferrer" className="font-mono text-xs text-white hover:text-mantle transition-colors block underline">
+              Open in Explorer · {shortHash(value)}
+            </a>
+            <CopyButton value={value} label={isTx ? "Copy tx hash" : "Copy"} />
+          </div>
         ) : (
-          <p className="font-mono text-xs text-zinc-400 break-all">{value}</p>
+          <div className="space-y-2">
+            <p className="font-mono text-xs text-zinc-400 break-all">{value}</p>
+            <CopyButton value={value} label={isTx ? "Copy tx hash" : "Copy"} />
+          </div>
         )
       ) : (
         <p className="text-xs text-zinc-600 font-mono">Not available yet</p>

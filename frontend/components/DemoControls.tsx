@@ -4,8 +4,9 @@ import { AlertTriangle, CheckCircle, Plus, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createDemoSignal, resolvePendingSignals } from "../lib/api";
+import type { RuntimeStatus } from "../lib/types";
 
-export function DemoControls() {
+export function DemoControls({ runtime }: { runtime: RuntimeStatus }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -18,7 +19,7 @@ export function DemoControls() {
       if (action === "create") {
         const result = await createDemoSignal();
         const chainText = result.signal.chainSignalId === null ? "mock proof" : `chain signal #${result.signal.chainSignalId}`;
-        setMessage(`Demo signal committed (${chainText}). Proof and reasoning are now visible below.`);
+        setMessage(`Proof signal committed (${chainText}). Source event, proof hash, and reasoning are visible below.`);
       } else {
         const result = await resolvePendingSignals();
         const synced = result.results.filter((entry) => entry.synced).length;
@@ -47,7 +48,7 @@ export function DemoControls() {
           className="inline-flex items-center justify-center gap-2 text-xs font-mono uppercase bg-white text-black px-4 py-2 hover:bg-zinc-200 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={14} aria-hidden />
-          Create Demo Signal_
+          Create Proof Signal_
         </button>
         <button
           onClick={() => run("resolve")}
@@ -74,7 +75,8 @@ export function DemoControls() {
         </p>
       ) : null}
       <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-600">
-        Demo mode: generated evaluation only, no trading or custody
+        {runtime.marketDataMode === "demo" ? "Demo event source · " : ""}
+        {runtime.marketDataSource} · no trading or custody
       </p>
     </div>
   );

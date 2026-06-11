@@ -101,3 +101,5 @@ desktop.ini
 tmp/
 temp/
 *~
+
+test.js

@@ -38,7 +38,7 @@ export default async function AgentPage() {
 
       <section className="mb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-white/10 bg-[#0a0a0a] divide-y divide-white/10 sm:divide-y-0 sm:divide-x">
         <StatCard label="Inconclusive" value={stats.inconclusive} />
-        <StatCard label="Accuracy" value={`${stats.accuracy}%`} />
+        <StatCard label="Accuracy" value={`${stats.accuracy}%`} hint="Accuracy excludes inconclusive signals." />
         <StatCard label="Average confidence" value={`${stats.averageConfidence}%`} />
         <StatCard label="Pending" value={stats.pendingSignals} />
       </section>
@@ -50,16 +50,23 @@ export default async function AgentPage() {
             <span className="w-1.5 h-1.5 bg-emerald-400 inline-block mb-4" />
             <p className="text-xs font-mono uppercase tracking-wider text-zinc-500">Best signal type</p>
           </div>
-          <p className="text-3xl font-light text-white font-mono mt-4">{stats.bestSignalType || "Awaiting results"}</p>
+          <p className="text-3xl font-light text-white font-mono mt-4">
+            {stats.hasSignalDiversity ? stats.bestSignalType : "Not enough signal diversity yet"}
+          </p>
         </div>
         <div className="p-8 border border-white/10 bg-[#0a0a0a] hover:bg-white/[0.02] transition-colors flex flex-col justify-between min-h-[160px]">
           <div>
             <span className="w-1.5 h-1.5 bg-amber-400 inline-block mb-4" />
             <p className="text-xs font-mono uppercase tracking-wider text-zinc-500">Weakest signal type</p>
           </div>
-          <p className="text-3xl font-light text-zinc-400 font-mono mt-4">{stats.worstSignalType || "Awaiting results"}</p>
+          <p className="text-3xl font-light text-zinc-400 font-mono mt-4">
+            {stats.hasSignalDiversity ? stats.worstSignalType : "Not enough signal diversity yet"}
+          </p>
         </div>
       </section>
+      <p className="mt-6 text-xs font-mono uppercase tracking-wider text-zinc-500">
+        Accuracy excludes inconclusive signals.
+      </p>
     </main>
   );
 }

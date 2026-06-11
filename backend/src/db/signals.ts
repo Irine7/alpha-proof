@@ -81,11 +81,13 @@ export async function getAgentStats() {
   const ranked = [...byType.entries()]
     .map(([signalType, value]) => ({
       signalType,
-      score: value.correct - value.failed,
+      accuracy: value.correct + value.failed ? value.correct / (value.correct + value.failed) : 0,
       total: value.correct + value.failed
     }))
     .filter((entry) => entry.total > 0)
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.accuracy - a.accuracy || b.total - a.total || a.signalType.localeCompare(b.signalType));
+
+  const hasSignalDiversity = ranked.length >= 2;
 
   return {
     totalSignals,
@@ -96,7 +98,8 @@ export async function getAgentStats() {
     inconclusive,
     accuracy,
     averageConfidence,
-    bestSignalType: ranked[0]?.signalType || null,
-    worstSignalType: ranked.at(-1)?.signalType || null
+    bestSignalType: hasSignalDiversity ? ranked[0]?.signalType || null : null,
+    worstSignalType: hasSignalDiversity ? ranked.at(-1)?.signalType || null : null,
+    hasSignalDiversity
   };
 }

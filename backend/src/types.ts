@@ -1,4 +1,16 @@
-export type DemoEventKind = "large_swap" | "repeated_buys" | "liquidity_removal" | "tracked_wallet_action";
+export type ChainMode = "local" | "testnet" | "mainnet" | "mock" | "auto" | "onchain" | "real";
+
+export type MarketDataMode = "demo" | "historical_mainnet" | "live_mainnet";
+
+export type MarketEventType =
+  | "large_swap"
+  | "repeated_buys"
+  | "liquidity_removal"
+  | "tracked_wallet_action"
+  | "volume_spike"
+  | "exit_risk";
+
+export type DemoEventKind = MarketEventType;
 
 export type Prediction = -1 | 0 | 1;
 
@@ -6,10 +18,24 @@ export type SignalStatus = "Pending" | "Resolved";
 
 export type SignalOutcome = "Unknown" | "Correct" | "Failed" | "Inconclusive";
 
-export type DemoEvent = {
+export type MarketEvent = {
   id: string;
-  kind: DemoEventKind;
+  kind: MarketEventType;
+  marketDataMode: MarketDataMode;
+  sourceChain: string;
+  sourceTxHash: string;
+  sourceBlockNumber: string;
+  sourceWallet?: string;
+  sourceProtocol?: string;
+  sourcePool?: string;
   asset: string;
+  counterAsset?: string;
+  usdValue: number;
+  eventType: string;
+  detectedAt: string;
+  rawEventJson: string;
+  dataHash?: string;
+  reasoningHash?: string;
   wallet?: string;
   pool?: string;
   amountUsd: number;
@@ -19,6 +45,14 @@ export type DemoEvent = {
   txHash: string;
   notes: string;
 };
+
+export type DemoEvent = MarketEvent;
+
+export interface MarketDataSource {
+  mode: MarketDataMode;
+  label: string;
+  getNextMarketEvent(kind?: MarketEventType): Promise<MarketEvent>;
+}
 
 export type SignalCandidate = {
   signalType: string;
@@ -41,6 +75,8 @@ export type ChainCommitResult = {
   chainSignalId: number;
   txHash: string;
   mocked: boolean;
+  blockNumber?: number;
+  committedAt?: Date;
 };
 
 export type ChainResolveResult = {

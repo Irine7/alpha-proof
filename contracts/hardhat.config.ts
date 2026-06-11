@@ -19,7 +19,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {},
     mantleTestnet: {
-      url: process.env.MANTLE_RPC_URL || "https://rpc.sepolia.mantle.xyz",
+      url: process.env.MANTLE_TESTNET_RPC_URL || "https://rpc.sepolia.mantle.xyz",
       chainId: 5003,
       accounts: privateKey ? [privateKey] : []
     }

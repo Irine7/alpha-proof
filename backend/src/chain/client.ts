@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { Contract, JsonRpcProvider, Wallet } from "ethers";
-import { assertChainConfigured, config, shouldUseMockChain } from "../config.js";
+import { assertChainConfigured, config, getProofNetworkConfig, shouldUseMockChain } from "../config.js";
 import type { ChainCommitResult, ChainResolveResult, ChainSignalRead, SignalOutcome, SignalStatus } from "../types.js";
 import { signalRegistryAbi } from "./SignalRegistryAbi.js";
 
@@ -11,7 +11,8 @@ function mockTxHash(seed: string) {
 }
 
 function getClient() {
-  const provider = new JsonRpcProvider(config.mantleRpcUrl);
+  const proof = getProofNetworkConfig();
+  const provider = new JsonRpcProvider(proof.rpcUrl);
   const wallet = new Wallet(config.agentPrivateKey, provider);
   const contract = new Contract(config.signalRegistryAddress, signalRegistryAbi, wallet);
   return { contract, provider };
@@ -83,6 +84,7 @@ export async function commitSignalOnChain(input: {
   if (!receipt) {
     throw new Error("SignalRegistry commit transaction did not return a receipt");
   }
+  const block = await provider.getBlock(receipt.blockNumber);
 
   const event = receipt?.logs
     .map((log: unknown) => {
@@ -101,7 +103,9 @@ export async function commitSignalOnChain(input: {
   return {
     chainSignalId: Number(event.args.signalId),
     txHash: receipt?.hash || tx.hash,
-    mocked: false
+    mocked: false,
+    blockNumber: receipt.blockNumber,
+    committedAt: block?.timestamp ? new Date(block.timestamp * 1000) : undefined
   };
 }
 

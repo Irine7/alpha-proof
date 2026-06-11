@@ -15,6 +15,18 @@ model Signal {
   asset          String
   wallet         String?
   pool           String?
+  marketDataMode String   @default("demo")
+  sourceChain    String?
+  sourceTxHash   String?
+  sourceBlockNumber String?
+  sourceWallet   String?
+  sourceProtocol String?
+  sourcePool     String?
+  counterAsset   String?
+  usdValue       Float?
+  sourceEventType String?
+  detectedAt     DateTime?
+  rawEventJson   String?
   confidence     Int
   prediction     Int
   aiSummary      String
@@ -25,6 +37,9 @@ model Signal {
   status         String   @default("Pending")
   outcome        String   @default("Unknown")
   commitTxHash   String?
+  commitBlockNumber String?
+  committedAt    DateTime?
+  contractAddress String?
   resolveTxHash  String?
   createdAt      DateTime @default(now())
   evaluationTime DateTime
@@ -33,4 +48,6 @@ model Signal {
   @@index([status])
   @@index([outcome])
   @@index([signalType])
+  @@index([marketDataMode])
+  @@index([sourceEventType])
 }

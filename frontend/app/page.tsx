@@ -25,10 +25,10 @@ export default async function Landing() {
             <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-wider text-zinc-500">
               <span className="flex items-center gap-2 text-mantle">
                 <span className="w-2 h-2 bg-mantle rounded-full animate-pulse" />
-                Live Interface
+                Runtime Interface
               </span>
               <span>{"//"}</span>
-              <span>{runtime.chainModeLabel}</span>
+              <span>{runtime.proofNetwork}</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-medium text-white tracking-tighter leading-[1.05]">
@@ -37,14 +37,14 @@ export default async function Landing() {
             </h1>
             
             <p className="max-w-xl text-lg text-zinc-400 leading-relaxed font-light">
-              DeFi anomaly detection infrastructure. This page reads live backend data: signals created by the agent, committed through SignalRegistry, and stored in Neon PostgreSQL
+              Raw blockchain activity is transformed into verifiable AI signals through detection, reasoning, and on-chain commitment.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-4">
               <Link href="/dashboard" className="bg-white text-black px-6 py-3 text-sm font-medium hover:bg-zinc-200 transition-colors flex items-center gap-2">
-                Open Dashboard <ArrowRight className="w-4 h-4" />
+                Run Live Demo <ArrowRight className="w-4 h-4" />
               </Link>
-              <a href="https://github.com/placeholder/alphaproof-ai" target="_blank" rel="noreferrer" className="border border-white/10 hover:border-white/30 text-white px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 bg-[#0a0a0a]">
+              <a href="https://github.com/Irine7/alpha-proof" target="_blank" rel="noreferrer" className="border border-white/10 hover:border-white/30 text-white px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 bg-[#0a0a0a]">
                 <Terminal className="w-4 h-4" /> View Contracts
               </a>
             </div>
@@ -76,7 +76,7 @@ export default async function Landing() {
                 </span>
               ))
             ) : (
-              <span className="mx-4 text-mantle">NO LIVE SIGNALS YET - OPEN DASHBOARD AND CREATE ONE</span>
+              <span className="mx-4 text-mantle">NO SIGNALS YET - OPEN DASHBOARD AND CREATE ONE</span>
             )}
           </div>
         </div>
@@ -86,7 +86,7 @@ export default async function Landing() {
           <div className="mb-12">
             <h2 className="text-3xl font-medium tracking-tight text-white mb-4">Architecture</h2>
             <p className="text-zinc-400 max-w-xl">
-              Raw blockchain data is transformed into verified profit through three deterministic phases
+              Raw blockchain activity is transformed into verifiable AI signals through detection, reasoning, and on-chain commitment.
             </p>
           </div>
 
@@ -96,7 +96,7 @@ export default async function Landing() {
               <div className="text-xs font-mono text-zinc-500 mb-2">PHASE_01</div>
               <h3 className="text-lg font-medium text-white mb-3">Ingestion</h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Continuous parsing of the Mantle mempool and transaction graph. The system ingests and structures terabytes of raw on-chain data in real-time
+                Market events are read from the configured source: demo-generated events, historical Mantle mainnet fixtures, or a future live Mantle mainnet reader
               </p>
             </div>
             
@@ -105,7 +105,7 @@ export default async function Landing() {
               <div className="text-xs font-mono text-zinc-500 mb-2">PHASE_02</div>
               <h3 className="text-lg font-medium text-white mb-3">Detection</h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Proprietary ML models filter out market noise. Early detection of exploits, insider accumulation, and hidden liquidity patterns
+                The detector converts source events into risk alerts and predictions with confidence, source hashes, and AI reasoning
               </p>
             </div>
 
@@ -114,7 +114,7 @@ export default async function Landing() {
               <div className="text-xs font-mono text-zinc-500 mb-2">PHASE_03</div>
               <h3 className="text-lg font-medium text-white mb-3">On-chain Commit</h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                The signal is cryptographically hashed and recorded on a smart contract. We create an irrefutable proof of insight before it realizes on the market
+                The signal is cryptographically hashed and recorded on the selected proof network before the outcome is evaluated
               </p>
             </div>
           </div>
@@ -124,13 +124,13 @@ export default async function Landing() {
         <section id="verification" className="pt-32 px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
             <div>
-              <h2 className="text-3xl font-medium tracking-tight text-white mb-6">Trustless Alpha</h2>
+              <h2 className="text-3xl font-medium tracking-tight text-white mb-6">Proof-Backed Signals</h2>
               <div className="space-y-6 text-zinc-400 text-sm leading-relaxed">
                 <p>
                   The market is filled with black boxes and retrospective analytics. In Web3, trust must be replaced by mathematical proof
                 </p>
                 <p>
-                  AlphaProof AI cannot forge history or delete an unsuccessful forecast. Each agent prediction becomes a transaction on the Mantle network, locking in the timestamp and model confidence
+                  AlphaProof AI cannot forge history or delete an unsuccessful forecast. Each agent prediction becomes a proof transaction, locking in the timestamp and model confidence
                 </p>
                 <ul className="space-y-4 pt-4 border-t border-white/10 mt-6">
                   <li className="flex items-center gap-3 text-white">
@@ -149,7 +149,7 @@ export default async function Landing() {
               </div>
             </div>
 
-            {/* Live Signal Terminal */}
+            {/* Signal Terminal */}
             <div className="overflow-hidden rounded-lg border border-zinc-800 bg-[#050505] font-mono text-xs shadow-2xl shadow-black/40">
               <div className="grid h-11 grid-cols-[auto_1fr_auto] items-center border-b border-zinc-800 bg-[#18181b] px-4 text-zinc-500">
                 <span className="flex items-center gap-2" aria-hidden>
@@ -157,13 +157,14 @@ export default async function Landing() {
                   <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-[#febc2e] text-[10px] leading-none text-yellow-950">-</span>
                   <span className="grid h-3.5 w-3.5 place-items-center rounded-full bg-[#28c840] text-[10px] leading-none text-green-950">-</span>
                 </span>
-                <span className="justify-self-center text-[11px] uppercase tracking-[0.18em] text-zinc-400">live_signal_trace</span>
+                <span className="justify-self-center text-[11px] uppercase tracking-[0.18em] text-zinc-400">signal_trace</span>
                 <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">Neon / Chain</span>
               </div>
               <div className="flex h-[300px] flex-col justify-end space-y-2 overflow-hidden bg-black p-5 text-zinc-400">
                 {latestSignal ? (
                   <>
-                    <div className="opacity-50">&gt; Runtime: {runtime.chainModeLabel}</div>
+                    <div className="opacity-50">&gt; Proof network: {runtime.proofNetwork}</div>
+                    <div className="opacity-50">&gt; Market source: {runtime.marketDataSource}</div>
                     <div className="opacity-50">&gt; Loading latest Neon signal... OK</div>
                     <div>&gt; WARN: {latestSignal.signalType} detected for {latestSignal.asset}</div>
                     <div>&gt; Prediction: {predictionLabel(latestSignal.prediction)}</div>
@@ -180,9 +181,10 @@ export default async function Landing() {
                   </>
                 ) : (
                   <>
-                    <div className="opacity-50">&gt; Runtime: {runtime.chainModeLabel}</div>
+                    <div className="opacity-50">&gt; Proof network: {runtime.proofNetwork}</div>
+                    <div className="opacity-50">&gt; Market source: {runtime.marketDataSource}</div>
                     <div>&gt; No backend signals found</div>
-                    <div className="text-mantle">&gt; Open Dashboard and create the first demo signal</div>
+                    <div className="text-mantle">&gt; Open Dashboard and create the first proof signal</div>
                   </>
                 )}
                 <div className="animate-pulse">&gt; _</div>
@@ -200,11 +202,11 @@ export default async function Landing() {
             ALPHAPROOF AI © {new Date().getFullYear()}
           </div>
           <div className="flex gap-6">
-            <a href="https://github.com/placeholder/alphaproof-ai" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-2">GitHub</a>
+            <a href="https://github.com/Irine7/alpha-proof" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-2">GitHub</a>
             <span className="text-zinc-700">Telegram planned</span>
             <a href="#" className="hover:text-white transition-colors">Docs</a>
           </div>
-          <div>DEPLOYED ON MANTLE</div>
+          <div>NOT FINANCIAL ADVICE</div>
         </div>
       </footer>
     </div>

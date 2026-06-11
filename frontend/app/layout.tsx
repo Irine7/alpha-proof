@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AlphaProof AI",
-  description: "Verifiable AI alpha agent for Mantle Network."
+  description: "Verifiable AI signal agent for Mantle Network."
 };
 
 const nav = [
@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
             </div>
             <Link href="/dashboard" className="hidden text-xs font-mono uppercase bg-white text-black px-4 py-2 hover:bg-zinc-200 transition-colors sm:inline-block">
-              Init App_
+              Run Live Demo
             </Link>
           </div>
         </nav>

@@ -1,0 +1,7 @@
+{
+  "network": "mantle-testnet",
+  "chainId": 5003,
+  "signalRegistry": "0xbc400d96a164ea3B4B88A346685Da4C1C0E6881E",
+  "deployedAt": "2026-06-11T12:32:39.625Z",
+  "explorerUrl": "https://explorer.sepolia.mantle.xyz/address/0xbc400d96a164ea3B4B88A346685Da4C1C0E6881E"
+}

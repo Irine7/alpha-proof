@@ -15,8 +15,25 @@ export function createServer() {
     res.json({ ok: true, service: "alphaproof-backend" });
   });
 
-  app.get("/api/runtime", (_req, res) => {
-    res.json(chainRuntimeStatus());
+  app.get("/api/runtime", async (_req, res, next) => {
+    try {
+      const latest = (await getLatestSignals(1))[0];
+      res.json({
+        ...chainRuntimeStatus(),
+        lastSourceEvent: latest
+          ? {
+              eventType: latest.sourceEventType,
+              asset: latest.asset,
+              sourceChain: latest.sourceChain,
+              txHash: latest.sourceTxHash,
+              detectedAt: latest.detectedAt
+            }
+          : null,
+        lastProofTx: latest?.commitTxHash || null
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.get("/api/signals", async (_req, res, next) => {

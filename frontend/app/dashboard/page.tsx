@@ -22,11 +22,11 @@ export default async function DashboardPage() {
           </div>
           <h1 className="text-5xl font-medium text-white tracking-tighter leading-none">Dashboard</h1>
           <p className="max-w-2xl text-zinc-400 font-light leading-relaxed">
-            AI makes a prediction, commits hashes through the chain client, stores the result in Neon, then resolves outcomes into reputation. The runtime panel below shows whether this session is mock or local on-chain
+            AI makes a prediction, commits hashes through the configured proof network, stores the result in Neon, then resolves outcomes into proof-backed reputation. Market data source and proof network are tracked separately below
           </p>
         </div>
         <div className="w-full lg:w-auto">
-          <DemoControls />
+          <DemoControls runtime={runtime} />
         </div>
       </div>
 
@@ -51,12 +51,12 @@ export default async function DashboardPage() {
         {signals.length ? (
           <div className="grid gap-6 md:grid-cols-2">
             {signals.map((signal) => (
-              <SignalCard key={signal.id} signal={signal} />
+              <SignalCard key={signal.id} signal={signal} runtime={runtime} />
             ))}
           </div>
         ) : (
           <div className="border border-white/10 bg-[#0a0a0a] p-8 text-center text-zinc-500 font-mono text-sm">
-            No signals yet. Start the backend, run Prisma setup, then click “Create Demo Signal”
+            No signals yet. Start the backend, run Prisma setup, then click “Create Proof Signal”
           </div>
         )}
       </section>
