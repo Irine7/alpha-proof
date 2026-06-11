@@ -55,7 +55,6 @@ export function formatSignalAlert(signal: {
 export async function sendSignalAlert(signal: Parameters<typeof formatSignalAlert>[0]) {
   if (!hasTelegramEnv()) {
     console.log("Telegram env missing; skipping alert.");
-    console.log(formatSignalAlert(signal));
     return;
   }
 

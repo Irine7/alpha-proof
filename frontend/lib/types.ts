@@ -33,6 +33,10 @@ export type Signal = {
   commitBlockNumber: string | null;
   committedAt: string | null;
   contractAddress: string | null;
+  chainMode: string | null;
+  chainId: number | null;
+  proofNetwork: string | null;
+  proofNetworkKey: string | null;
   resolveTxHash: string | null;
   createdAt: string;
   evaluationTime: string;
@@ -64,10 +68,14 @@ export type RuntimeStatus = {
   isOnChain: boolean;
   rpcTarget: string;
   signalRegistryAddress: string | null;
+  chainId: number;
+  currentProofNetworkKey: string;
   hasAgentPrivateKey: boolean;
+  liveMainnetConfigured: boolean;
   proofExplorerUrl: string | null;
   contractExplorerUrl: string | null;
   txExplorerBaseUrl: string | null;
+  explorerEnabled: boolean;
   lastSourceEvent: {
     eventType: string | null;
     asset: string;

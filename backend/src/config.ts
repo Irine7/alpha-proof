@@ -1,10 +1,12 @@
 import dotenv from "dotenv";
+import { JsonRpcProvider } from "ethers";
 import type { ChainMode, MarketDataMode } from "./types.js";
 
 dotenv.config();
 
 const DEFAULT_MANTLE_TESTNET_RPC_URL = "https://rpc.sepolia.mantle.xyz";
 const DEFAULT_MANTLE_TESTNET_EXPLORER_URL = "https://explorer.sepolia.mantle.xyz";
+export const MANTLE_SEPOLIA_CHAIN_ID = 5003;
 
 function valueOrLegacy(primary: string | undefined, legacy: string | undefined) {
   return primary || legacy || "";
@@ -40,11 +42,18 @@ export const config = {
   chainMode: normalizeChainMode(process.env.CHAIN_MODE),
   marketDataMode: normalizeMarketDataMode(process.env.MARKET_DATA_MODE),
   signalRegistryAddress: process.env.SIGNAL_REGISTRY_ADDRESS || "",
+  expectedChainId: Number(process.env.EXPECTED_CHAIN_ID || MANTLE_SEPOLIA_CHAIN_ID),
   mantleRpcUrl: valueOrLegacy(process.env.MANTLE_LOCAL_RPC_URL, process.env.MANTLE_RPC_URL) || "http://127.0.0.1:8545",
   mantleTestnetRpcUrl: process.env.MANTLE_TESTNET_RPC_URL || DEFAULT_MANTLE_TESTNET_RPC_URL,
   mantleTestnetExplorerUrl: process.env.MANTLE_TESTNET_EXPLORER_URL || DEFAULT_MANTLE_TESTNET_EXPLORER_URL,
   mantleMainnetRpcUrl: process.env.MANTLE_MAINNET_RPC_URL || "",
   mantleMainnetExplorerUrl: process.env.MANTLE_MAINNET_EXPLORER_URL || "",
+  liveScanBlockWindow: Math.max(1, Number(process.env.LIVE_SCAN_BLOCK_WINDOW || 100)),
+  liveTransferThresholdUnits: process.env.LIVE_TRANSFER_THRESHOLD_UNITS || "",
+  trackedTokenAddresses: (process.env.TRACKED_TOKEN_ADDRESSES || "")
+    .split(",")
+    .map((address) => address.trim())
+    .filter(Boolean),
   agentPrivateKey: process.env.AGENT_PRIVATE_KEY || "",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
   telegramChatId: process.env.TELEGRAM_CHAT_ID || "",
@@ -60,11 +69,11 @@ export function getProofNetworkConfig() {
   if (config.chainMode === "testnet") {
     return {
       mode: "testnet",
-      proofNetwork: "Mantle Testnet",
-      proofNetworkLabel: "Mantle Testnet contract",
+      proofNetwork: "Mantle Sepolia Testnet",
+      proofNetworkLabel: "Mantle Sepolia Testnet contract",
       rpcUrl: config.mantleTestnetRpcUrl,
       explorerUrl: config.mantleTestnetExplorerUrl,
-      chainId: 5003
+      chainId: MANTLE_SEPOLIA_CHAIN_ID
     };
   }
 
@@ -89,6 +98,12 @@ export function getProofNetworkConfig() {
   };
 }
 
+export function currentProofNetworkKey() {
+  const proof = getProofNetworkConfig();
+  const contractAddress = config.signalRegistryAddress || "unconfigured";
+  return `${config.chainMode}:${proof.chainId}:${contractAddress.toLowerCase()}`;
+}
+
 export function hasChainEnv() {
   if (config.chainMode === "mock") return false;
   const proof = getProofNetworkConfig();
@@ -105,7 +120,16 @@ export function assertChainConfigured() {
   const proof = getProofNetworkConfig();
   const missing = [
     ["SIGNAL_REGISTRY_ADDRESS", config.signalRegistryAddress],
-    [proof.mode === "testnet" ? "MANTLE_TESTNET_RPC_URL" : proof.mode === "mainnet" ? "MANTLE_MAINNET_RPC_URL" : "MANTLE_LOCAL_RPC_URL or MANTLE_RPC_URL", proof.rpcUrl],
+    [
+      proof.mode === "testnet"
+        ? "MANTLE_TESTNET_RPC_URL"
+        : proof.mode === "mainnet"
+          ? "MANTLE_MAINNET_RPC_URL"
+          : "MANTLE_LOCAL_RPC_URL or MANTLE_RPC_URL",
+      proof.mode === "testnet" ? process.env.MANTLE_TESTNET_RPC_URL : proof.rpcUrl
+    ],
+    [proof.mode === "testnet" ? "MANTLE_TESTNET_EXPLORER_URL" : "explorer", proof.mode === "testnet" ? process.env.MANTLE_TESTNET_EXPLORER_URL : "ok"],
+    [proof.mode === "testnet" ? "EXPECTED_CHAIN_ID" : "expected chain", proof.mode === "testnet" ? process.env.EXPECTED_CHAIN_ID || String(MANTLE_SEPOLIA_CHAIN_ID) : "ok"],
     ["AGENT_PRIVATE_KEY", config.agentPrivateKey]
   ]
     .filter(([, value]) => !value)
@@ -116,12 +140,35 @@ export function assertChainConfigured() {
   }
 }
 
+export async function assertExpectedRpcChainId() {
+  const proof = getProofNetworkConfig();
+  if (proof.mode !== "testnet") return;
+
+  const expected = config.expectedChainId || MANTLE_SEPOLIA_CHAIN_ID;
+  if (expected !== MANTLE_SEPOLIA_CHAIN_ID) {
+    throw new Error(`CHAIN_MODE=testnet expects Mantle Sepolia Testnet chainId ${MANTLE_SEPOLIA_CHAIN_ID}, received EXPECTED_CHAIN_ID=${expected}`);
+  }
+
+  const provider = new JsonRpcProvider(proof.rpcUrl);
+  const network = await provider.getNetwork();
+  const actual = Number(network.chainId);
+  if (actual !== MANTLE_SEPOLIA_CHAIN_ID) {
+    throw new Error(
+      `Mantle Sepolia Testnet RPC chainId mismatch: expected ${MANTLE_SEPOLIA_CHAIN_ID}, received ${actual}. Check MANTLE_TESTNET_RPC_URL and do not mix legacy Mantle Testnet 5001 with Sepolia explorer links.`
+    );
+  }
+}
+
 export function chainModeLabel() {
   if (shouldUseMockChain()) return "mock local proofs";
   return getProofNetworkConfig().proofNetworkLabel;
 }
 
 export function marketDataModeLabel() {
+  if (config.marketDataMode === "live_mainnet" && (!config.mantleMainnetRpcUrl || !config.trackedTokenAddresses.length)) {
+    return "Live mainnet reader not configured";
+  }
+
   const map: Record<MarketDataMode, string> = {
     demo: "Demo-generated market events",
     historical_mainnet: "Historical Mantle mainnet events",
@@ -146,10 +193,14 @@ export function chainRuntimeStatus() {
     isOnChain: !isMock,
     rpcTarget: redactRpcTarget(proof.rpcUrl),
     signalRegistryAddress: config.signalRegistryAddress || null,
+    chainId: proof.chainId,
+    currentProofNetworkKey: currentProofNetworkKey(),
     hasAgentPrivateKey: Boolean(config.agentPrivateKey),
+    liveMainnetConfigured: Boolean(config.mantleMainnetRpcUrl && config.trackedTokenAddresses.length),
     proofExplorerUrl: explorerUrl || null,
     contractExplorerUrl: explorerUrl && config.signalRegistryAddress ? `${explorerUrl}/address/${config.signalRegistryAddress}` : null,
-    txExplorerBaseUrl: explorerUrl ? `${explorerUrl}/tx` : null
+    txExplorerBaseUrl: explorerUrl ? `${explorerUrl}/tx` : null,
+    explorerEnabled: Boolean(explorerUrl)
   };
 }
 

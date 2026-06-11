@@ -1,5 +1,5 @@
 import { commitSignalOnChain } from "../chain/client.js";
-import { config } from "../config.js";
+import { config, currentProofNetworkKey, getProofNetworkConfig } from "../config.js";
 import { createSignal } from "../db/signals.js";
 import { getMarketDataSource } from "../market/dataSource.js";
 import { sendSignalAlert } from "../telegram/bot.js";
@@ -41,6 +41,7 @@ export async function createDemoSignal(kind?: MarketEventType) {
     prediction: analysis.prediction,
     evaluationTime: analysis.evaluationTime
   });
+  const proofNetwork = getProofNetworkConfig();
 
   const signal = await createSignal({
     chainSignalId: chainResult.chainSignalId,
@@ -73,6 +74,10 @@ export async function createDemoSignal(kind?: MarketEventType) {
     commitBlockNumber: chainResult.blockNumber ? String(chainResult.blockNumber) : null,
     committedAt: chainResult.committedAt || new Date(),
     contractAddress: config.signalRegistryAddress || null,
+    chainMode: config.chainMode,
+    chainId: proofNetwork.chainId,
+    proofNetwork: proofNetwork.proofNetwork,
+    proofNetworkKey: currentProofNetworkKey(),
     evaluationTime: analysis.evaluationTime
   });
 

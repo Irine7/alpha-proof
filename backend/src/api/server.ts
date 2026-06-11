@@ -17,7 +17,7 @@ export function createServer() {
 
   app.get("/api/runtime", async (_req, res, next) => {
     try {
-      const latest = (await getLatestSignals(1))[0];
+      const latest = (await getLatestSignals(1, { proofReadyOnly: true }))[0];
       res.json({
         ...chainRuntimeStatus(),
         lastSourceEvent: latest
@@ -36,9 +36,11 @@ export function createServer() {
     }
   });
 
-  app.get("/api/signals", async (_req, res, next) => {
+  app.get("/api/signals", async (req, res, next) => {
     try {
-      res.json(await getLatestSignals());
+      const proofReadyOnly = req.query.records !== "all";
+      const currentNetworkOnly = req.query.network !== "all";
+      res.json(await getLatestSignals(25, { proofReadyOnly, currentNetworkOnly }));
     } catch (error) {
       next(error);
     }
@@ -64,9 +66,11 @@ export function createServer() {
     }
   });
 
-  app.get("/api/agent/stats", async (_req, res, next) => {
+  app.get("/api/agent/stats", async (req, res, next) => {
     try {
-      res.json(await getAgentStats());
+      const proofReadyOnly = req.query.records !== "all";
+      const currentNetworkOnly = req.query.network !== "all";
+      res.json(await getAgentStats({ proofReadyOnly, currentNetworkOnly }));
     } catch (error) {
       next(error);
     }

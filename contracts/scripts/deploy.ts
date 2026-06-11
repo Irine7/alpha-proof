@@ -5,40 +5,43 @@ import { ethers, network } from "hardhat";
 async function saveDeployment(address: string, txHash?: string) {
   const chain = await ethers.provider.getNetwork();
   const deploymentsDir = path.resolve(__dirname, "..", "deployments");
-  const deploymentName = network.name === "mantleTestnet" ? "mantle-testnet" : network.name;
+  const deploymentName = network.name === "mantleTestnet" ? "mantle-sepolia" : network.name;
   const explorerBase =
     network.name === "mantleTestnet"
       ? process.env.MANTLE_TESTNET_EXPLORER_URL || "https://explorer.sepolia.mantle.xyz"
       : "";
   const deploymentPath = path.join(deploymentsDir, `${deploymentName}.json`);
+  const legacyDeploymentPath = path.join(deploymentsDir, "mantle-testnet.json");
+  const payload =
+    network.name === "mantleTestnet"
+      ? {
+          network: "mantle-sepolia",
+          chainId: Number(chain.chainId),
+          signalRegistry: address,
+          deployedAt: new Date().toISOString(),
+          explorerUrl: `${explorerBase}/address/${address}`
+        }
+      : {
+          contract: "SignalRegistry",
+          address,
+          signalRegistry: address,
+          network: network.name,
+          chainId: Number(chain.chainId),
+          txHash: txHash || null,
+          deployedAt: new Date().toISOString()
+        };
+  const serialized = `${JSON.stringify(payload, null, 2)}\n`;
 
   fs.mkdirSync(deploymentsDir, { recursive: true });
-  fs.writeFileSync(
-    deploymentPath,
-    `${JSON.stringify(
-      network.name === "mantleTestnet"
-        ? {
-            network: "mantle-testnet",
-            chainId: Number(chain.chainId),
-            signalRegistry: address,
-            deployedAt: new Date().toISOString(),
-            explorerUrl: `${explorerBase}/address/${address}`
-          }
-        : {
-            contract: "SignalRegistry",
-            address,
-            signalRegistry: address,
-            network: network.name,
-            chainId: Number(chain.chainId),
-            txHash: txHash || null,
-            deployedAt: new Date().toISOString()
-          },
-      null,
-      2
-    )}\n`
-  );
+  fs.writeFileSync(deploymentPath, serialized);
+  if (network.name === "mantleTestnet") {
+    fs.writeFileSync(legacyDeploymentPath, serialized);
+  }
 
   console.log(`Deployment saved to ${deploymentPath}`);
+  if (network.name === "mantleTestnet") {
+    console.log(`Legacy deployment alias saved to ${legacyDeploymentPath}`);
+  }
 }
 
 async function main() {

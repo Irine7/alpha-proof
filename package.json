@@ -11,7 +11,10 @@
     "contracts:deploy": "pnpm --filter @alphaproof/contracts deploy",
     "contracts:deploy:local": "pnpm --filter @alphaproof/contracts deploy:local",
     "contracts:read:local": "pnpm --filter @alphaproof/contracts read:local",
-    "backend:db": "pnpm --filter @alphaproof/backend db:push"
+    "backend:db": "pnpm --filter @alphaproof/backend db:push",
+    "proof:smoke": "pnpm --filter @alphaproof/backend proof:smoke",
+    "proof:smoke:testnet": "pnpm --filter @alphaproof/backend proof:smoke:testnet",
+    "proof:seed-curated": "pnpm --filter @alphaproof/backend proof:seed-curated"
   },
   "engines": {
     "node": ">=20.0.0",

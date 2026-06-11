@@ -8,7 +8,8 @@ export type MarketEventType =
   | "liquidity_removal"
   | "tracked_wallet_action"
   | "volume_spike"
-  | "exit_risk";
+  | "exit_risk"
+  | "whale_transfer";
 
 export type DemoEventKind = MarketEventType;
 
@@ -30,7 +31,8 @@ export type MarketEvent = {
   sourcePool?: string;
   asset: string;
   counterAsset?: string;
-  usdValue: number;
+  usdValue: number | null;
+  usdValueNote?: string;
   eventType: string;
   detectedAt: string;
   rawEventJson: string;

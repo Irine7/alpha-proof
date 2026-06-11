@@ -15,6 +15,7 @@ export default async function Landing() {
   const [signals, stats, runtime] = await Promise.all([getSignals(), getStats(), getRuntimeStatus()]);
   const latestSignal = signals[0] || null;
   const tickerSignals = signals.length ? [...signals.slice(0, 5), ...signals.slice(0, 5)] : [];
+  const demoLabel = runtime.marketDataMode === "live_mainnet" ? "Run Live Demo" : "Run Proof Demo";
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-white selection:text-black">
@@ -42,7 +43,7 @@ export default async function Landing() {
 
             <div className="flex flex-wrap gap-4 pt-4">
               <Link href="/dashboard" className="bg-white text-black px-6 py-3 text-sm font-medium hover:bg-zinc-200 transition-colors flex items-center gap-2">
-                Run Live Demo <ArrowRight className="w-4 h-4" />
+                {demoLabel} <ArrowRight className="w-4 h-4" />
               </Link>
               <a href="https://github.com/Irine7/alpha-proof" target="_blank" rel="noreferrer" className="border border-white/10 hover:border-white/30 text-white px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 bg-[#0a0a0a]">
                 <Terminal className="w-4 h-4" /> View Contracts

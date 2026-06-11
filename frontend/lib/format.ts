@@ -34,6 +34,15 @@ export function minutesUntil(value: string) {
   return `${Math.ceil(diff / 60000)} min`;
 }
 
+export function isEvaluationDue(value: string) {
+  return new Date(value).getTime() <= Date.now();
+}
+
+export function evaluationPendingLabel(value: string) {
+  if (isEvaluationDue(value)) return "Evaluation due · Still pending";
+  return `Evaluation in ${minutesUntil(value)}`;
+}
+
 export function explorerTxUrl(txHash?: string | null, txExplorerBaseUrl?: string | null) {
   if (!txHash) return null;
   if (!txExplorerBaseUrl) return null;

@@ -40,6 +40,10 @@ model Signal {
   commitBlockNumber String?
   committedAt    DateTime?
   contractAddress String?
+  chainMode       String?
+  chainId         Int?
+  proofNetwork    String?
+  proofNetworkKey String?
   resolveTxHash  String?
   createdAt      DateTime @default(now())
   evaluationTime DateTime
@@ -50,4 +54,6 @@ model Signal {
   @@index([signalType])
   @@index([marketDataMode])
   @@index([sourceEventType])
+  @@index([proofNetworkKey])
+  @@index([chainMode, chainId])
 }

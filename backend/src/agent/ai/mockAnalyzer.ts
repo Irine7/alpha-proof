@@ -7,13 +7,18 @@ function predictionText(prediction: -1 | 0 | 1) {
 }
 
 export function analyzeWithMockAi(event: MarketEvent, candidate: SignalCandidate): AiAnalysis {
-  const sizeScore = Math.min(18, Math.floor(event.usdValue / 25000));
+  const observedUsd = event.usdValue ?? event.amountUsd;
+  const sizeScore = Math.min(18, Math.floor(observedUsd / 25000));
   const activityScore = Math.min(10, (event.txCount || 1) * 2);
   const confidence = Math.min(94, 58 + sizeScore + activityScore);
   const windowMinutes = event.kind === "liquidity_removal" || event.kind === "exit_risk" ? 20 : 30;
   const evaluationTime = new Date(Date.now() + windowMinutes * 60 * 1000);
 
-  const aiSummary = `A ${event.sourceProtocol || "Mantle"} source event flagged <span class="text-mantle font-medium">${event.asset}</span> as ${candidate.signalType.toLowerCase()} with about <span class="text-mantle font-medium">$${event.usdValue.toLocaleString()}</span> in observed activity.`;
+  const valueText =
+    event.usdValue === null
+      ? `${event.amountUsd.toLocaleString()} token units observed; USD estimate unavailable`
+      : `$${event.usdValue.toLocaleString()}`;
+  const aiSummary = `A ${event.sourceProtocol || "Mantle"} source event flagged <span class="text-mantle font-medium">${event.asset}</span> as ${candidate.signalType.toLowerCase()} with about <span class="text-mantle font-medium">${valueText}</span> in observed activity.`;
 
   const reasoning = [
     `Demo AI analysis for ${candidate.signalType}.`,

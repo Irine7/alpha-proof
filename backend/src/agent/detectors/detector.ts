@@ -7,7 +7,8 @@ export function detectSignal(event: MarketEvent): SignalCandidate {
     liquidity_removal: { signalType: "Liquidity Shock", prediction: -1 },
     tracked_wallet_action: { signalType: "Smart Wallet Activity", prediction: 0 },
     volume_spike: { signalType: "Volume Spike", prediction: event.direction === "sell" ? -1 : 1 },
-    exit_risk: { signalType: "Exit Risk", prediction: -1 }
+    exit_risk: { signalType: "Exit Risk", prediction: -1 },
+    whale_transfer: { signalType: "Whale Accumulation", prediction: event.direction === "sell" ? -1 : 0 }
   };
 
   const selected = map[event.kind];

@@ -16,6 +16,11 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
 
   const commitUrl = explorerTxUrl(signal.commitTxHash, runtime.txExplorerBaseUrl);
   const resolveUrl = explorerTxUrl(signal.resolveTxHash, runtime.txExplorerBaseUrl);
+  const contractAddress = signal.contractAddress || runtime.signalRegistryAddress;
+  const contractUrl = runtime.proofExplorerUrl && contractAddress ? `${runtime.proofExplorerUrl}/address/${contractAddress}` : null;
+  const proofNetwork = signal.proofNetwork || runtime.proofNetwork;
+  const chainId = signal.chainId || runtime.chainId;
+  const rawEventJson = formatJson(signal.rawEventJson);
 
   return (
     <main className="relative z-10 pt-32 pb-20 max-w-[1000px] mx-auto px-6">
@@ -44,38 +49,63 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {/* Info Bento Grid */}
-        <section className="grid gap-px bg-white/10 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 border border-white/10 overflow-hidden">
-          <Info label="Signal ID" value={signal.id} />
-          <Info label="Chain signal ID" value={signal.chainSignalId ?? "Mock/local"} />
-          <Info label="Proof network" value={runtime.proofNetwork} />
-          <Info label="Evaluation time" value={formatDate(signal.evaluationTime)} />
-          <Info label="Outcome" value={signal.outcome} />
-          <Info label="Committed block/time" value={signal.commitBlockNumber ? `${signal.commitBlockNumber} · ${signal.committedAt ? formatDate(signal.committedAt) : "time pending"}` : "Local/mock timestamp"} />
-          <Info label="Contract address" value={signal.contractAddress || runtime.signalRegistryAddress || "Not configured"} />
-          <Info label="Market source" value={formatMode(signal.marketDataMode)} />
+        <section className="flex flex-wrap gap-2">
+          <CopyButton value={String(signal.id)} label="Copy signal id" />
+          {signal.commitTxHash ? <CopyButton value={signal.commitTxHash} label="Copy tx hash" /> : null}
+          {contractAddress ? <CopyButton value={contractAddress} label="Copy contract address" /> : null}
+          {commitUrl ? (
+            <a href={commitUrl} target="_blank" rel="noreferrer" className="inline-flex items-center border border-white/10 px-2 py-1 text-[10px] font-mono uppercase text-zinc-300 transition-colors hover:border-white/30 hover:text-white">
+              Open proof tx
+            </a>
+          ) : (
+            <span className="inline-flex items-center border border-white/10 px-2 py-1 text-[10px] font-mono uppercase text-zinc-600">
+              {runtime.isMock ? "Mock proof, not on-chain" : "Local Hardhat transaction, explorer unavailable"}
+            </span>
+          )}
+          {contractUrl ? (
+            <a href={contractUrl} target="_blank" rel="noreferrer" className="inline-flex items-center border border-white/10 px-2 py-1 text-[10px] font-mono uppercase text-zinc-300 transition-colors hover:border-white/30 hover:text-white">
+              Open contract
+            </a>
+          ) : contractAddress ? (
+            <span className="inline-flex items-center border border-white/10 px-2 py-1 text-[10px] font-mono uppercase text-zinc-600">
+              Local Hardhat transaction, explorer unavailable
+            </span>
+          ) : null}
         </section>
 
-        <section className="grid gap-px bg-white/10 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 border border-white/10 overflow-hidden">
-          <Info label="Source chain" value={signal.sourceChain || "Not available"} />
-          <Info label="Source tx hash" value={signal.sourceTxHash || "Not available"} />
-          <Info label="Source wallet" value={signal.sourceWallet || signal.wallet || "Not applicable"} />
-          <Info label="Protocol / pool" value={`${signal.sourceProtocol || "Unknown"} / ${signal.sourcePool || signal.pool || "Unknown"}`} />
-          <Info label="Block number" value={signal.sourceBlockNumber || "Not available"} />
-          <Info label="Event type" value={signal.sourceEventType || "Not available"} />
-          <Info label="USD value" value={formatUsd(signal.usdValue)} />
-          <Info label="Asset pair" value={signal.counterAsset ? `${signal.asset}/${signal.counterAsset}` : signal.asset} />
-        </section>
-
-        {/* AI Summary */}
         <section className="space-y-4">
-          <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">AI Summary</h2>
+          <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">Signal Summary</h2>
+          <div className="grid gap-px bg-white/10 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 border border-white/10 overflow-hidden">
+            <Info label="Signal type" value={signal.signalType} />
+            <Info label="Asset pair" value={signal.counterAsset ? `${signal.asset}/${signal.counterAsset}` : signal.asset} />
+            <Info label="Prediction" value={predictionLabel(signal.prediction)} />
+            <Info label="Confidence" value={`${signal.confidence}%`} />
+            <Info label="Status / outcome" value={`${signal.status} / ${signal.outcome}`} />
+            <Info label="Evaluation time" value={formatDate(signal.evaluationTime)} />
+            <Info label="Signal ID" value={signal.id} />
+            <Info label="Created" value={formatDate(signal.createdAt)} />
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">Source Event</h2>
+          <div className="grid gap-px bg-white/10 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 border border-white/10 overflow-hidden">
+            <Info label="Market data mode" value={formatMode(signal.marketDataMode)} />
+            <Info label="Source chain" value={signal.sourceChain || "Not available"} />
+            <Info label="Source tx hash" value={signal.sourceTxHash || "Not available"} />
+            <Info label="Source block" value={signal.sourceBlockNumber || "Not available"} />
+            <Info label="Source wallet" value={signal.sourceWallet || signal.wallet || "Not applicable"} />
+            <Info label="Protocol" value={signal.sourceProtocol || "Unknown"} />
+            <Info label="Pool" value={signal.sourcePool || signal.pool || "Unknown"} />
+            <Info label="Event type" value={signal.sourceEventType || "Not available"} />
+            <Info label="USD value" value={formatUsd(signal.usdValue)} />
+            <Info label="Detected at" value={signal.detectedAt ? formatDate(signal.detectedAt) : "Not available"} />
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">AI Reasoning</h2>
           <p className="text-base leading-relaxed text-zinc-400 font-light" dangerouslySetInnerHTML={{ __html: signal.aiSummary }} />
-        </section>
-
-        {/* Technical Terminal: Full AI Reasoning */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">Full AI Reasoning</h2>
           <div className="bg-[#050505] border border-zinc-800 p-1 flex flex-col font-mono text-xs">
             <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex justify-between items-center text-zinc-500">
               <span className="flex items-center gap-2">
@@ -94,12 +124,25 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           </div>
         </section>
 
-        {/* Proof Signatures */}
-        <section className="grid gap-4 md:grid-cols-2">
-          <Proof label="Reasoning hash" value={signal.reasoningHash} />
-          <Proof label="Data hash" value={signal.dataHash} />
-          <Proof label="Commit tx" value={signal.commitTxHash} href={commitUrl} />
-          <Proof label="Resolve tx" value={signal.resolveTxHash} href={resolveUrl} />
+        <section className="space-y-4">
+          <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">On-chain Proof</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Proof label="Proof network" value={proofNetwork} />
+            <Proof label="Chain ID" value={String(chainId)} />
+            <Proof label="Chain signal ID" value={signal.chainSignalId === null ? null : String(signal.chainSignalId)} />
+            <Proof label="Contract address" value={contractAddress} href={contractUrl} />
+            <Proof label="Commit tx" value={signal.commitTxHash} href={commitUrl} />
+            <Proof label="Commit block" value={signal.commitBlockNumber} />
+            <Proof label="Committed at" value={signal.committedAt ? formatDate(signal.committedAt) : null} />
+            <Proof label="Resolve tx" value={signal.resolveTxHash} href={resolveUrl} />
+            <Proof label="Outcome" value={signal.outcome} />
+            <Proof label="Data hash" value={signal.dataHash} />
+            <Proof label="Reasoning hash" value={signal.reasoningHash} />
+            <Proof label="Proof network key" value={signal.proofNetworkKey} />
+          </div>
+          {!runtime.explorerEnabled ? (
+            <p className="text-xs font-mono text-zinc-500">Local Hardhat transaction, explorer unavailable</p>
+          ) : null}
         </section>
 
         {/* Technical Terminal: Source Event Data */}
@@ -122,16 +165,25 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
 
         <section className="space-y-4">
           <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">Raw Event JSON</h2>
-          <div className="bg-[#050505] border border-zinc-800 p-1 flex flex-col font-mono text-xs">
-            <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 text-zinc-500">raw_event.json</div>
-            <pre className="p-4 overflow-x-auto text-zinc-400 leading-relaxed max-h-[300px]">
-              {signal.rawEventJson || "Not available"}
+          <details className="bg-[#050505] border border-zinc-800 p-1 font-mono text-xs">
+            <summary className="cursor-pointer bg-zinc-900 border-b border-zinc-800 px-4 py-2 text-zinc-500">raw_event.json</summary>
+            <pre className="p-4 overflow-x-auto whitespace-pre-wrap break-words text-zinc-400 leading-relaxed max-h-[300px]">
+              {rawEventJson}
             </pre>
-          </div>
+          </details>
         </section>
       </div>
     </main>
   );
+}
+
+function formatJson(value?: string | null) {
+  if (!value) return "Not available";
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2);
+  } catch {
+    return value;
+  }
 }
 
 function Info({ label, value }: { label: string; value: string | number }) {
@@ -145,6 +197,7 @@ function Info({ label, value }: { label: string; value: string | number }) {
 
 function Proof({ label, value, href }: { label: string; value?: string | null; href?: string | null }) {
   const isTx = label.toLowerCase().includes("tx");
+  const isContract = label.toLowerCase().includes("contract");
 
   return (
     <div className="border border-white/10 bg-[#0a0a0a] p-5 space-y-1">
@@ -153,14 +206,14 @@ function Proof({ label, value, href }: { label: string; value?: string | null; h
         href ? (
           <div className="flex flex-wrap items-center gap-2">
             <a href={href} target="_blank" rel="noreferrer" className="font-mono text-xs text-white hover:text-mantle transition-colors block underline">
-              Open in Explorer · {shortHash(value)}
+              {isContract ? "Open contract" : "Open proof tx"} · {shortHash(value)}
             </a>
-            <CopyButton value={value} label={isTx ? "Copy tx hash" : "Copy"} />
+            <CopyButton value={value} label={isTx ? "Copy tx hash" : isContract ? "Copy contract address" : "Copy"} />
           </div>
         ) : (
           <div className="space-y-2">
             <p className="font-mono text-xs text-zinc-400 break-all">{value}</p>
-            <CopyButton value={value} label={isTx ? "Copy tx hash" : "Copy"} />
+            <CopyButton value={value} label={isTx ? "Copy tx hash" : isContract ? "Copy contract address" : "Copy"} />
           </div>
         )
       ) : (

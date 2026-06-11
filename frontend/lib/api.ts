@@ -26,9 +26,17 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function getSignals(): Promise<Signal[]> {
+function buildQuery(options: { showAllRecords?: boolean; showAllNetworks?: boolean } = {}) {
+  const params = new URLSearchParams();
+  if (options.showAllRecords) params.set("records", "all");
+  if (options.showAllNetworks) params.set("network", "all");
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+export async function getSignals(options: { showAllRecords?: boolean; showAllNetworks?: boolean } = {}): Promise<Signal[]> {
   try {
-    return await apiFetch<Signal[]>("/api/signals");
+    return await apiFetch<Signal[]>(`/api/signals${buildQuery(options)}`);
   } catch {
     return [];
   }
@@ -42,9 +50,9 @@ export async function getSignal(id: string): Promise<Signal | null> {
   }
 }
 
-export async function getStats(): Promise<AgentStats> {
+export async function getStats(options: { showAllRecords?: boolean; showAllNetworks?: boolean } = {}): Promise<AgentStats> {
   try {
-    return await apiFetch<AgentStats>("/api/agent/stats");
+    return await apiFetch<AgentStats>(`/api/agent/stats${buildQuery(options)}`);
   } catch {
     return {
       totalSignals: 0,
@@ -77,10 +85,14 @@ export async function getRuntimeStatus(): Promise<RuntimeStatus> {
       isOnChain: false,
       rpcTarget: "unavailable",
       signalRegistryAddress: null,
+      chainId: 0,
+      currentProofNetworkKey: "unknown:0:unconfigured",
       hasAgentPrivateKey: false,
+      liveMainnetConfigured: false,
       proofExplorerUrl: null,
       contractExplorerUrl: null,
       txExplorerBaseUrl: null,
+      explorerEnabled: false,
       lastSourceEvent: null,
       lastProofTx: null
     };

@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
             </div>
             <Link href="/dashboard" className="hidden text-xs font-mono uppercase bg-white text-black px-4 py-2 hover:bg-zinc-200 transition-colors sm:inline-block">
-              Run Live Demo
+              Run Proof Demo
             </Link>
           </div>
         </nav>

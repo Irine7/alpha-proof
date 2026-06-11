@@ -18,6 +18,7 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {},
+    // Mantle Sepolia Testnet, chainId 5003.
     mantleTestnet: {
       url: process.env.MANTLE_TESTNET_RPC_URL || "https://rpc.sepolia.mantle.xyz",
       chainId: 5003,

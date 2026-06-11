@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { Contract, JsonRpcProvider, Wallet } from "ethers";
-import { assertChainConfigured, config, getProofNetworkConfig, shouldUseMockChain } from "../config.js";
+import { assertChainConfigured, assertExpectedRpcChainId, config, getProofNetworkConfig, shouldUseMockChain } from "../config.js";
 import type { ChainCommitResult, ChainResolveResult, ChainSignalRead, SignalOutcome, SignalStatus } from "../types.js";
 import { signalRegistryAbi } from "./SignalRegistryAbi.js";
 
@@ -68,6 +68,7 @@ export async function commitSignalOnChain(input: {
   }
 
   assertChainConfigured();
+  await assertExpectedRpcChainId();
 
   const { contract, provider } = getClient();
   await assertRegistryDeployed(provider);
@@ -118,6 +119,7 @@ export async function resolveSignalOnChain(chainSignalId: number, outcome: Signa
   }
 
   assertChainConfigured();
+  await assertExpectedRpcChainId();
 
   const { contract, provider } = getClient();
   await assertRegistryDeployed(provider);
@@ -134,6 +136,7 @@ export async function readSignalOnChain(chainSignalId: number): Promise<ChainSig
   if (shouldUseMockChain()) return null;
 
   assertChainConfigured();
+  await assertExpectedRpcChainId();
 
   const { contract, provider } = getClient();
   await assertRegistryDeployed(provider);

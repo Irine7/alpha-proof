@@ -4,6 +4,11 @@ import { getPendingSignals, markSignalResolved } from "../../db/signals.js";
 import type { SignalOutcome } from "../../types.js";
 
 function chooseDemoOutcome(signal: Signal): SignalOutcome {
+  if (signal.signalType === "Volume Spike") return "Correct";
+  if (signal.signalType === "Liquidity Shock") return "Correct";
+  if (signal.signalType === "Exit Risk") return "Failed";
+  if (signal.signalType === "Smart Wallet Activity") return "Inconclusive";
+
   const basis = signal.confidence + signal.id + signal.signalType.length;
   if (basis % 7 === 0) return "Inconclusive";
   if (signal.confidence >= 78 || basis % 2 === 0) return "Correct";

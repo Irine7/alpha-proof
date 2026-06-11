@@ -10,7 +10,12 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
     "db:generate": "node scripts/prisma-generate.mjs",
-    "db:push": "prisma db push --skip-generate"
+    "db:push": "prisma db push --skip-generate",
+    "proof:create": "tsx scripts/create-proof-signal.ts",
+    "proof:resolve": "tsx scripts/resolve-pending.ts",
+    "proof:smoke": "tsx scripts/proof-smoke.ts",
+    "proof:smoke:testnet": "tsx scripts/proof-smoke-testnet.ts",
+    "proof:seed-curated": "tsx scripts/seed-curated-demo.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.3.1",
