@@ -14,6 +14,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
     getStats({ showAllRecords, showAllNetworks }),
     getRuntimeStatus()
   ]);
+  const consoleLabel =
+    runtime.marketDataMode === "live_mainnet"
+      ? "LIVE DEMO CONSOLE"
+      : runtime.marketDataMode === "historical_mainnet"
+        ? "TESTNET PROOF CONSOLE"
+        : "DEMO PROOF CONSOLE";
 
   return (
     <main className="relative z-10 pt-32 pb-20 max-w-[1400px] mx-auto px-6">
@@ -23,7 +29,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
           <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-wider text-zinc-500">
             <span className="flex items-center gap-2 text-mantle">
               <span className="w-2 h-2 bg-mantle rounded-full animate-pulse" />
-              Live Demo Console
+              {consoleLabel}
             </span>
             <span>{"//"}</span>
             <span>Agent Operations</span>

@@ -8,6 +8,14 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
+function chainWriteHint(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.toLowerCase().includes("insufficient funds")) {
+    return `${message}\n\nThe testnet agent wallet does not have enough Mantle Sepolia MNT for gas. Fund AGENT_PRIVATE_KEY's address and rerun pnpm proof:smoke:testnet.`;
+  }
+  return message;
+}
+
 async function main() {
   assert(config.chainMode === "testnet", "Testnet smoke requires CHAIN_MODE=testnet");
   assert(config.marketDataMode === "historical_mainnet", "Testnet smoke requires MARKET_DATA_MODE=historical_mainnet");
@@ -63,7 +71,7 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(chainWriteHint(error));
     process.exitCode = 1;
   })
   .finally(async () => {

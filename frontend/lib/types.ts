@@ -55,6 +55,21 @@ export type AgentStats = {
   bestSignalType: string | null;
   worstSignalType: string | null;
   hasSignalDiversity: boolean;
+  outcomeDistribution: {
+    correct: number;
+    failed: number;
+    inconclusive: number;
+    pending: number;
+  };
+  signalTypePerformance: Array<{
+    signalType: string;
+    total: number;
+    correct: number;
+    failed: number;
+    inconclusive: number;
+    accuracy: number;
+  }>;
+  latestResolvedSignals: Signal[];
 };
 
 export type RuntimeStatus = {

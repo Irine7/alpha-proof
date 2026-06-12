@@ -18,7 +18,7 @@ export function DemoControls({ runtime }: { runtime: RuntimeStatus }) {
     try {
       if (action === "create") {
         const result = await createDemoSignal();
-        const chainText = result.signal.chainSignalId === null ? "mock proof" : `chain signal #${result.signal.chainSignalId}`;
+        const chainText = result.signal.chainSignalId === null ? "mock proof" : `Contract Signal ID #${result.signal.chainSignalId}`;
         setMessage(`Proof signal committed (${chainText}). Source event, proof hash, and reasoning are visible below.`);
       } else {
         const result = await resolvePendingSignals();

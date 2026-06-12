@@ -24,7 +24,10 @@ export function SignalCard({ signal, runtime }: { signal: Signal; runtime: Runti
           <div>
             <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{"//"} {signal.signalType}</p>
             <h3 className="mt-2 text-2xl font-medium text-white tracking-tight">{signal.asset}</h3>
-            <p className="mt-1 text-[10px] font-mono uppercase tracking-wider text-zinc-600">Signal ID #{signal.id}</p>
+            <div className="mt-1 space-y-1 text-[10px] font-mono uppercase tracking-wider text-zinc-600">
+              <p>DB Signal ID #{signal.id}</p>
+              <p>Contract Signal ID {signal.chainSignalId === null ? "Not available" : `#${signal.chainSignalId}`}</p>
+            </div>
           </div>
           <StatusBadge status={signal.status} outcome={signal.outcome} />
         </div>
@@ -98,10 +101,21 @@ export function SignalCard({ signal, runtime }: { signal: Signal; runtime: Runti
             <div className="grid gap-2 sm:grid-cols-2">
               <p>Pending outcome</p>
               <p>{evaluationPendingLabel(signal.evaluationTime)}</p>
-              <p>Signal ID #{signal.id}</p>
-              <p>Proof tx {shortHash(signal.commitTxHash)}</p>
+              <p>Contract Signal ID {signal.chainSignalId === null ? "Not available" : `#${signal.chainSignalId}`}</p>
+              <p>DB Signal ID #{signal.id}</p>
+              <p>Proof tx</p>
+              <p>{shortHash(signal.commitTxHash)}</p>
             </div>
-            {signal.commitTxHash ? <div className="mt-3"><CopyButton value={signal.commitTxHash} label="Copy tx hash" /></div> : null}
+            {signal.commitTxHash ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {txUrl ? (
+                  <a href={txUrl} target="_blank" rel="noreferrer" className="inline-flex items-center border border-amber-300/30 px-2 py-1 text-[10px] uppercase tracking-wider text-amber-100 transition-colors hover:border-amber-200 hover:text-white">
+                    Open proof tx
+                  </a>
+                ) : null}
+                <CopyButton value={signal.commitTxHash} label="Copy tx hash" />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

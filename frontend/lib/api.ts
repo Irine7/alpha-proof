@@ -65,7 +65,15 @@ export async function getStats(options: { showAllRecords?: boolean; showAllNetwo
       averageConfidence: 0,
       bestSignalType: null,
       worstSignalType: null,
-      hasSignalDiversity: false
+      hasSignalDiversity: false,
+      outcomeDistribution: {
+        correct: 0,
+        failed: 0,
+        inconclusive: 0,
+        pending: 0
+      },
+      signalTypePerformance: [],
+      latestResolvedSignals: []
     };
   }
 }

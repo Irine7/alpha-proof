@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getRuntimeStatus } from "../lib/api";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,10 +11,13 @@ export const metadata: Metadata = {
 const nav = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/agent", label: "Reputation" }
+  { href: "/reputation", label: "Reputation" }
 ];
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const runtime = await getRuntimeStatus();
+  const demoLabel = runtime.marketDataMode === "live_mainnet" ? "Run Live Demo" : "Run Proof Demo";
+
   return (
     <html lang="en" className="scroll-smooth">
       <body className="min-h-screen bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-white selection:text-black">
@@ -37,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
             </div>
             <Link href="/dashboard" className="hidden text-xs font-mono uppercase bg-white text-black px-4 py-2 hover:bg-zinc-200 transition-colors sm:inline-block">
-              Run Proof Demo
+              {demoLabel}
             </Link>
           </div>
         </nav>

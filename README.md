@@ -167,6 +167,14 @@ RESOLVE_AFTER_CREATE=true pnpm proof:smoke:testnet
 
 The output includes network, chainId, contract, signalId, chainSignalId, commitTxHash, commitExplorerUrl, status, marketDataMode, and sourceEventType. It does not print secrets and does not clean the database.
 
+To create one pending Mantle Sepolia proof signal for the opening dashboard shot:
+
+```bash
+pnpm proof:create-pending:testnet
+```
+
+This requires `CHAIN_MODE=testnet` and `MARKET_DATA_MODE=historical_mainnet`, creates one real `commitSignal` transaction, prints the Mantle Sepolia explorer link, does not resolve the signal, and does not clean Neon.
+
 ## Curated Demo Seed
 
 From the repo root:
@@ -220,8 +228,92 @@ Each `/signals/<id>` page shows:
 - Signal summary: type, asset pair, confidence, prediction, status/outcome, evaluation time.
 - Source event: market data mode, source chain, source tx hash, source block, wallet, protocol, pool, event type, USD value, detected time.
 - AI reasoning: summary, reasoning, reasoning hash.
-- On-chain proof: proof network, chain ID, contract address, chain signal ID, commit tx, commit block/time, resolve tx, outcome, data hash, explorer buttons, and copy buttons.
+- On-chain proof: proof network, chain ID, contract address, Contract Signal ID, commit tx, commit block/time, resolve tx, outcome, data hash, explorer buttons, and copy buttons.
 - Raw event JSON in a collapsible formatted block.
+
+## Final Mantle Sepolia Demo Flow
+
+1. Deploy contract:
+
+```bash
+cd contracts
+pnpm hardhat run scripts/deploy.ts --network mantleTestnet
+```
+
+2. Backend env:
+
+```env
+CHAIN_MODE="testnet"
+MARKET_DATA_MODE="historical_mainnet"
+MANTLE_TESTNET_RPC_URL="https://rpc.sepolia.mantle.xyz"
+MANTLE_TESTNET_EXPLORER_URL="https://explorer.sepolia.mantle.xyz"
+EXPECTED_CHAIN_ID=5003
+SIGNAL_REGISTRY_ADDRESS="<deployed address>"
+AGENT_PRIVATE_KEY="<testnet wallet private key>"
+DATABASE_URL="<Neon PostgreSQL URL>"
+```
+
+3. Create one pending signal:
+
+```bash
+pnpm proof:smoke:testnet
+```
+
+or:
+
+```bash
+pnpm proof:create-pending:testnet
+```
+
+4. Optional curated dataset:
+
+```bash
+pnpm proof:seed-curated
+```
+
+5. Resolve:
+
+```powershell
+$env:RESOLVE_AFTER_CREATE="true"
+pnpm proof:smoke:testnet
+Remove-Item Env:\RESOLVE_AFTER_CREATE
+```
+
+or:
+
+```bash
+pnpm --filter @alphaproof/backend proof:resolve
+```
+
+6. Start services:
+
+```bash
+cd backend
+pnpm dev
+```
+
+```bash
+cd frontend
+pnpm dev
+```
+
+7. Open:
+
+```text
+http://localhost:3000/dashboard
+http://localhost:3000/reputation
+```
+
+8. Demo video checklist:
+
+- Show dashboard runtime panel.
+- Show Mantle Sepolia contract link.
+- Create proof signal.
+- Open proof tx in explorer.
+- Open signal detail.
+- Show source event, dataHash, and reasoningHash.
+- Resolve pending.
+- Show reputation update.
 
 ## Checks
 

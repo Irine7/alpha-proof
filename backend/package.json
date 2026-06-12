@@ -15,6 +15,7 @@
     "proof:resolve": "tsx scripts/resolve-pending.ts",
     "proof:smoke": "tsx scripts/proof-smoke.ts",
     "proof:smoke:testnet": "tsx scripts/proof-smoke-testnet.ts",
+    "proof:create-pending:testnet": "tsx scripts/create-pending-testnet.ts",
     "proof:seed-curated": "tsx scripts/seed-curated-demo.ts"
   },
   "dependencies": {

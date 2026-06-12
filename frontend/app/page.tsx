@@ -175,7 +175,8 @@ export default async function Landing() {
                       <div className={latestSignal.status === "Resolved" ? "text-mantle" : "text-amber-300"}>
                         {latestSignal.status === "Resolved" ? "✓ Resolved on current record" : "• Pending evaluation"}
                       </div>
-                      <div className="text-zinc-500">  Chain id: {latestSignal.chainSignalId ?? "mock/local fallback"}</div>
+                      <div className="text-zinc-500">  DB Signal ID: {latestSignal.id}</div>
+                      <div className="text-zinc-500">  Contract Signal ID: {latestSignal.chainSignalId ?? "mock/local fallback"}</div>
                       <div className="text-zinc-500">  Tx: {shortHash(latestSignal.commitTxHash)}</div>
                       <div className="text-zinc-500">  Reasoning: {shortHash(latestSignal.reasoningHash)}</div>
                     </div>

@@ -14,6 +14,7 @@
     "backend:db": "pnpm --filter @alphaproof/backend db:push",
     "proof:smoke": "pnpm --filter @alphaproof/backend proof:smoke",
     "proof:smoke:testnet": "pnpm --filter @alphaproof/backend proof:smoke:testnet",
+    "proof:create-pending:testnet": "pnpm --filter @alphaproof/backend proof:create-pending:testnet",
     "proof:seed-curated": "pnpm --filter @alphaproof/backend proof:seed-curated"
   },
   "engines": {

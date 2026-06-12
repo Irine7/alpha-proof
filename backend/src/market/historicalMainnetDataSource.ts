@@ -3,6 +3,7 @@ import path from "node:path";
 import type { MarketDataSource, MarketEvent, MarketEventType } from "../types.js";
 
 let cursor = 0;
+const kindCursor = new Map<MarketEventType, number>();
 let cachedEvents: MarketEvent[] | null = null;
 
 async function loadEvents() {
@@ -20,8 +21,13 @@ export const historicalMainnetDataSource: MarketDataSource = {
   async getNextMarketEvent(kind?: MarketEventType) {
     const events = await loadEvents();
     const available = kind ? events.filter((event) => event.kind === kind) : events;
-    const template = available[cursor % available.length] || events[0];
-    cursor += 1;
+    const selectedCursor = kind ? kindCursor.get(kind) || 0 : cursor;
+    const template = available[selectedCursor % available.length] || events[0];
+    if (kind) {
+      kindCursor.set(kind, selectedCursor + 1);
+    } else {
+      cursor += 1;
+    }
 
     const detectedAt = new Date().toISOString();
     return {

@@ -141,11 +141,13 @@ export async function getAgentStats(options: { proofReadyOnly?: boolean; current
   const averageConfidence = totalSignals ? Math.round(confidenceTotal / totalSignals) : 0;
   const accuracy = correct + failed ? Math.round((correct / (correct + failed)) * 100) : 0;
 
-  const byType = new Map<string, { correct: number; failed: number }>();
-  for (const signal of resolved) {
-    const current = byType.get(signal.signalType) || { correct: 0, failed: 0 };
+  const byType = new Map<string, { total: number; correct: number; failed: number; inconclusive: number }>();
+  for (const signal of signals) {
+    const current = byType.get(signal.signalType) || { total: 0, correct: 0, failed: 0, inconclusive: 0 };
+    current.total += 1;
     if (signal.outcome === "Correct") current.correct += 1;
     if (signal.outcome === "Failed") current.failed += 1;
+    if (signal.outcome === "Inconclusive") current.inconclusive += 1;
     byType.set(signal.signalType, current);
   }
 
@@ -159,6 +161,19 @@ export async function getAgentStats(options: { proofReadyOnly?: boolean; current
     .sort((a, b) => b.accuracy - a.accuracy || b.total - a.total || a.signalType.localeCompare(b.signalType));
 
   const hasSignalDiversity = ranked.length >= 2;
+  const signalTypePerformance = [...byType.entries()]
+    .map(([signalType, value]) => ({
+      signalType,
+      total: value.total,
+      correct: value.correct,
+      failed: value.failed,
+      inconclusive: value.inconclusive,
+      accuracy: value.correct + value.failed ? Math.round((value.correct / (value.correct + value.failed)) * 100) : 0
+    }))
+    .sort((a, b) => b.total - a.total || a.signalType.localeCompare(b.signalType));
+  const latestResolvedSignals = [...resolved]
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+    .slice(0, 6);
 
   return {
     totalSignals,
@@ -171,6 +186,14 @@ export async function getAgentStats(options: { proofReadyOnly?: boolean; current
     averageConfidence,
     bestSignalType: hasSignalDiversity ? ranked[0]?.signalType || null : null,
     worstSignalType: hasSignalDiversity ? ranked.at(-1)?.signalType || null : null,
-    hasSignalDiversity
+    hasSignalDiversity,
+    outcomeDistribution: {
+      correct,
+      failed,
+      inconclusive,
+      pending: totalSignals - resolved.length
+    },
+    signalTypePerformance,
+    latestResolvedSignals
   };
 }

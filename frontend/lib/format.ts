@@ -48,3 +48,9 @@ export function explorerTxUrl(txHash?: string | null, txExplorerBaseUrl?: string
   if (!txExplorerBaseUrl) return null;
   return `${txExplorerBaseUrl}/${txHash}`;
 }
+
+export function explorerAddressUrl(address?: string | null, proofExplorerUrl?: string | null) {
+  if (!address) return null;
+  if (!proofExplorerUrl) return null;
+  return `${proofExplorerUrl}/address/${address}`;
+}

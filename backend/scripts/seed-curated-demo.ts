@@ -10,28 +10,42 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 const curatedKinds: MarketEventType[] = [
-  "volume_spike",
   "exit_risk",
-  "liquidity_removal",
-  "tracked_wallet_action",
   "large_swap",
   "repeated_buys",
-  "whale_transfer",
+  "liquidity_removal",
   "volume_spike",
+  "tracked_wallet_action",
+  "whale_transfer",
+  "large_swap",
   "exit_risk",
-  "tracked_wallet_action"
+  "liquidity_removal"
 ];
 
 const resolvedOutcomes: SignalOutcome[] = [
   "Correct",
   "Failed",
+  "Correct",
   "Inconclusive",
   "Correct",
+  "Inconclusive",
   "Failed",
-  "Correct",
-  "Inconclusive",
-  "Correct"
+  "Failed"
 ];
+
+function explorerTxUrl(txHash?: string | null) {
+  const proof = getProofNetworkConfig();
+  if (!txHash || !proof.explorerUrl) return null;
+  return `${proof.explorerUrl}/tx/${txHash}`;
+}
+
+function chainWriteHint(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.toLowerCase().includes("insufficient funds")) {
+    return `${message}\n\nCurated seed stopped before completion because the agent wallet does not have enough proof-network gas. Fund the AGENT_PRIVATE_KEY wallet with Mantle Sepolia MNT and rerun pnpm proof:seed-curated. Already committed records were not cleaned or reset.`;
+  }
+  return message;
+}
 
 function assertProofReady(signal: Awaited<ReturnType<typeof createDemoSignal>>["signal"]) {
   assert(signal.sourceEventType, `Signal ${signal.id} missing sourceEventType`);
@@ -42,6 +56,33 @@ function assertProofReady(signal: Awaited<ReturnType<typeof createDemoSignal>>["
   assert(signal.commitTxHash, `Signal ${signal.id} missing commitTxHash`);
   assert(signal.chainSignalId !== null, `Signal ${signal.id} missing chainSignalId`);
   assert(signal.proofNetworkKey === currentProofNetworkKey(), `Signal ${signal.id} was not created for the current proof network`);
+}
+
+function assertCuratedDiversity(signals: Awaited<ReturnType<typeof createDemoSignal>>["signal"][]) {
+  const signalTypes = new Set(signals.map((signal) => signal.signalType));
+  const sourceEventTypes = new Set(signals.map((signal) => signal.sourceEventType).filter(Boolean));
+  const assetsAndPools = new Set(signals.flatMap((signal) => [signal.asset, signal.sourcePool, signal.pool].filter(Boolean)));
+
+  for (const signalType of ["Whale Accumulation", "Liquidity Shock", "Smart Wallet Activity", "Volume Spike", "Exit Risk"]) {
+    assert(signalTypes.has(signalType), `Curated seed missing signal type: ${signalType}`);
+  }
+
+  for (const eventType of [
+    "large_buy_swap",
+    "large_sell_to_stable",
+    "repeated_buy_swaps",
+    "liquidity_removed",
+    "pool_volume_spike",
+    "smart_wallet_collateral_deposit",
+    "whale_transfer",
+    "exit_liquidity_warning"
+  ]) {
+    assert(sourceEventTypes.has(eventType), `Curated seed missing source event type: ${eventType}`);
+  }
+
+  for (const assetOrPair of ["MNT", "mETH", "MNT/USDT", "USDC/MNT", "USDT/MNT"]) {
+    assert(assetsAndPools.has(assetOrPair), `Curated seed missing asset or pair: ${assetOrPair}`);
+  }
 }
 
 async function main() {
@@ -56,6 +97,8 @@ async function main() {
     assertProofReady(result.signal);
     created.push(result.signal);
   }
+
+  assertCuratedDiversity(created);
 
   const resolved = [];
   for (let index = 0; index < resolvedOutcomes.length; index += 1) {
@@ -92,15 +135,18 @@ async function main() {
         marketDataMode: config.marketDataMode,
         proofNetwork: shouldUseMockChain() ? "Mock" : proof.proofNetwork,
         chainId: proof.chainId,
+        contractAddress: config.signalRegistryAddress || null,
         proofNetworkKey: currentProofNetworkKey(),
         created: created.length,
         resolved: resolved.length,
         pending: pending.length,
-        outcomes: {
-          correct: resolved.filter((entry) => entry.outcome === "Correct").length,
-          failed: resolved.filter((entry) => entry.outcome === "Failed").length,
-          inconclusive: resolved.filter((entry) => entry.outcome === "Inconclusive").length
-        },
+        correct: resolved.filter((entry) => entry.outcome === "Correct").length,
+        failed: resolved.filter((entry) => entry.outcome === "Failed").length,
+        inconclusive: resolved.filter((entry) => entry.outcome === "Inconclusive").length,
+        firstExplorerTx: explorerTxUrl(created[0]?.commitTxHash),
+        lastExplorerTx: explorerTxUrl(created.at(-1)?.commitTxHash),
+        signalTypes: [...new Set(created.map((signal) => signal.signalType))],
+        sourceEventTypes: [...new Set(created.map((signal) => signal.sourceEventType).filter(Boolean))],
         resolvedSignals: resolved,
         pendingSignals: pending
       },
@@ -112,7 +158,7 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(chainWriteHint(error));
     process.exitCode = 1;
   })
   .finally(async () => {

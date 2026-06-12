@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StatusBadge } from "../../../components/StatusBadge";
-import { explorerTxUrl, formatDate, formatMode, formatUsd, predictionLabel, shortHash } from "../../../lib/format";
+import { explorerAddressUrl, explorerTxUrl, formatDate, formatMode, formatUsd, predictionLabel, shortHash } from "../../../lib/format";
 import { getRuntimeStatus, getSignal } from "../../../lib/api";
 import { ArrowLeft, Terminal } from "lucide-react";
 import { CopyButton } from "../../../components/CopyButton";
@@ -17,7 +17,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
   const commitUrl = explorerTxUrl(signal.commitTxHash, runtime.txExplorerBaseUrl);
   const resolveUrl = explorerTxUrl(signal.resolveTxHash, runtime.txExplorerBaseUrl);
   const contractAddress = signal.contractAddress || runtime.signalRegistryAddress;
-  const contractUrl = runtime.proofExplorerUrl && contractAddress ? `${runtime.proofExplorerUrl}/address/${contractAddress}` : null;
+  const contractUrl = explorerAddressUrl(contractAddress, runtime.proofExplorerUrl);
   const proofNetwork = signal.proofNetwork || runtime.proofNetwork;
   const chainId = signal.chainId || runtime.chainId;
   const rawEventJson = formatJson(signal.rawEventJson);
@@ -38,7 +38,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
         {/* Header Block */}
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start border-b border-white/10 pb-8">
           <div className="space-y-3">
-            <p className="text-xs font-mono uppercase tracking-widest text-zinc-500">{"//"} SIGNAL #{signal.id}</p>
+            <p className="text-xs font-mono uppercase tracking-widest text-zinc-500">{"//"} DB SIGNAL #{signal.id}</p>
             <h1 className="text-4xl font-medium tracking-tight text-white">{signal.signalType}</h1>
             <p className="text-lg text-zinc-400 font-light">
               {signal.asset} · <span className="font-mono text-sm text-zinc-500">{predictionLabel(signal.prediction)}</span> · {signal.confidence}% confidence
@@ -50,7 +50,8 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <section className="flex flex-wrap gap-2">
-          <CopyButton value={String(signal.id)} label="Copy signal id" />
+          <CopyButton value={String(signal.id)} label="Copy DB Signal ID" />
+          {signal.chainSignalId !== null ? <CopyButton value={String(signal.chainSignalId)} label="Copy Contract Signal ID" /> : null}
           {signal.commitTxHash ? <CopyButton value={signal.commitTxHash} label="Copy tx hash" /> : null}
           {contractAddress ? <CopyButton value={contractAddress} label="Copy contract address" /> : null}
           {commitUrl ? (
@@ -82,7 +83,8 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             <Info label="Confidence" value={`${signal.confidence}%`} />
             <Info label="Status / outcome" value={`${signal.status} / ${signal.outcome}`} />
             <Info label="Evaluation time" value={formatDate(signal.evaluationTime)} />
-            <Info label="Signal ID" value={signal.id} />
+            <Info label="Database Signal ID" value={signal.id} />
+            <Info label="Contract Signal ID" value={signal.chainSignalId === null ? "Not available" : signal.chainSignalId} />
             <Info label="Created" value={formatDate(signal.createdAt)} />
           </div>
         </section>
@@ -106,6 +108,9 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
         <section className="space-y-4">
           <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">AI Reasoning</h2>
           <p className="text-base leading-relaxed text-zinc-400 font-light" dangerouslySetInnerHTML={{ __html: signal.aiSummary }} />
+          <p className="text-sm leading-relaxed text-zinc-500">
+            The AI reasoning is hashed into reasoningHash so the explanation can be audited against the committed proof.
+          </p>
           <div className="bg-[#050505] border border-zinc-800 p-1 flex flex-col font-mono text-xs">
             <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex justify-between items-center text-zinc-500">
               <span className="flex items-center gap-2">
@@ -129,7 +134,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           <div className="grid gap-4 md:grid-cols-2">
             <Proof label="Proof network" value={proofNetwork} />
             <Proof label="Chain ID" value={String(chainId)} />
-            <Proof label="Chain signal ID" value={signal.chainSignalId === null ? null : String(signal.chainSignalId)} />
+            <Proof label="Contract Signal ID" value={signal.chainSignalId === null ? null : String(signal.chainSignalId)} />
             <Proof label="Contract address" value={contractAddress} href={contractUrl} />
             <Proof label="Commit tx" value={signal.commitTxHash} href={commitUrl} />
             <Proof label="Commit block" value={signal.commitBlockNumber} />
@@ -148,6 +153,9 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
         {/* Technical Terminal: Source Event Data */}
         <section className="space-y-4">
           <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">Source Event Data</h2>
+          <p className="text-sm leading-relaxed text-zinc-500">
+            This source event data is hashed into dataHash before the signal is committed on-chain.
+          </p>
           <div className="bg-[#050505] border border-zinc-800 p-1 flex flex-col font-mono text-xs">
             <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex justify-between items-center text-zinc-500">
               <span>event_source_data.json</span>
@@ -165,6 +173,9 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
 
         <section className="space-y-4">
           <h2 className="text-xl font-medium text-white tracking-tight border-b border-white/10 pb-2">Raw Event JSON</h2>
+          <p className="text-sm leading-relaxed text-zinc-500">
+            This source event data is hashed into dataHash before the signal is committed on-chain.
+          </p>
           <details className="bg-[#050505] border border-zinc-800 p-1 font-mono text-xs">
             <summary className="cursor-pointer bg-zinc-900 border-b border-zinc-800 px-4 py-2 text-zinc-500">raw_event.json</summary>
             <pre className="p-4 overflow-x-auto whitespace-pre-wrap break-words text-zinc-400 leading-relaxed max-h-[300px]">
@@ -198,6 +209,8 @@ function Info({ label, value }: { label: string; value: string | number }) {
 function Proof({ label, value, href }: { label: string; value?: string | null; href?: string | null }) {
   const isTx = label.toLowerCase().includes("tx");
   const isContract = label.toLowerCase().includes("contract");
+  const isContractSignalId = label === "Contract Signal ID";
+  const copyLabel = isTx ? "Copy tx hash" : isContractSignalId ? "Copy Contract Signal ID" : isContract ? "Copy contract address" : "Copy";
 
   return (
     <div className="border border-white/10 bg-[#0a0a0a] p-5 space-y-1">
@@ -208,12 +221,12 @@ function Proof({ label, value, href }: { label: string; value?: string | null; h
             <a href={href} target="_blank" rel="noreferrer" className="font-mono text-xs text-white hover:text-mantle transition-colors block underline">
               {isContract ? "Open contract" : "Open proof tx"} · {shortHash(value)}
             </a>
-            <CopyButton value={value} label={isTx ? "Copy tx hash" : isContract ? "Copy contract address" : "Copy"} />
+            <CopyButton value={value} label={copyLabel} />
           </div>
         ) : (
           <div className="space-y-2">
             <p className="font-mono text-xs text-zinc-400 break-all">{value}</p>
-            <CopyButton value={value} label={isTx ? "Copy tx hash" : isContract ? "Copy contract address" : "Copy"} />
+            <CopyButton value={value} label={copyLabel} />
           </div>
         )
       ) : (
