@@ -131,7 +131,7 @@ export default async function Landing() {
                   The market is filled with black boxes and retrospective analytics. In Web3, trust must be replaced by mathematical proof
                 </p>
                 <p>
-                  AlphaProof AI cannot forge history or delete an unsuccessful forecast. Each agent prediction becomes a proof transaction, locking in the timestamp and model confidence
+                  AlphaProof cannot forge history or delete an unsuccessful forecast. Each agent prediction becomes a proof transaction, locking in the timestamp and model confidence
                 </p>
                 <ul className="space-y-4 pt-4 border-t border-white/10 mt-6">
                   <li className="flex items-center gap-3 text-white">
@@ -201,7 +201,7 @@ export default async function Landing() {
         <div className="max-w-[1400px] mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-mono text-zinc-600">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-zinc-600" />
-            ALPHAPROOF AI © {new Date().getFullYear()}
+            ALPHAPROOF © {new Date().getFullYear()}
           </div>
           <div className="flex gap-6">
             <a href="https://github.com/Irine7/alpha-proof" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-2">GitHub</a>

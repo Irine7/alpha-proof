@@ -57,3 +57,38 @@ model Signal {
   @@index([proofNetworkKey])
   @@index([chainMode, chainId])
 }
+
+model TelegramSubscriber {
+  id                   Int       @id @default(autoincrement())
+  chatId               String    @unique
+  telegramUserId       String?
+  username             String?
+  firstName            String?
+  lastName             String?
+  isActive             Boolean   @default(true)
+  subscribedToCreates  Boolean   @default(true)
+  subscribedToResolves Boolean   @default(true)
+  minConfidence        Int?
+  signalTypes          Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  lastSeenAt           DateTime?
+
+  @@index([isActive])
+  @@index([telegramUserId])
+}
+
+model TelegramConnectCode {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  status         String    @default("pending")
+  chatId         String?
+  telegramUserId String?
+  username       String?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+  usedAt         DateTime?
+
+  @@index([status])
+  @@index([expiresAt])
+}

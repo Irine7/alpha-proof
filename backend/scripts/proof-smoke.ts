@@ -20,7 +20,7 @@ async function main() {
     assert(signal.chainSignalId !== null, "Smoke failed: on-chain mode did not store chainSignalId");
   }
 
-  const resolved = shouldResolve ? await resolvePendingDemoSignals() : null;
+  const resolved = shouldResolve ? await resolvePendingDemoSignals({ signalId: signal.id, notify: true }) : null;
 
   console.log(
     JSON.stringify(

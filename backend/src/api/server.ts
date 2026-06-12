@@ -4,7 +4,9 @@ import { getAgentStats, getLatestSignals, getSignalById } from "../db/signals.js
 import { createDemoSignal } from "../agent/orchestrator.js";
 import { resolvePendingDemoSignals } from "../agent/evaluators/demoEvaluator.js";
 import type { DemoEventKind } from "../types.js";
-import { chainRuntimeStatus } from "../config.js";
+import { chainRuntimeStatus, config } from "../config.js";
+import { getTelegramBotUsername, handleTelegramWebhookUpdate } from "../telegram/bot.js";
+import { createConnectCode, getConnectCodeStatus, getSubscriberByChatId, maskChatId } from "../telegram/subscriptions.js";
 
 export function createServer() {
   const app = express();
@@ -76,6 +78,90 @@ export function createServer() {
     }
   });
 
+  app.post("/api/telegram/connect-code", async (_req, res, next) => {
+    try {
+      if (!config.telegramEnabled || !config.telegramBotToken) {
+        res.status(503).json({ error: "Telegram bot is not configured" });
+        return;
+      }
+
+      const username = await getTelegramBotUsername();
+      if (!username) {
+        res.status(503).json({ error: "TELEGRAM_BOT_USERNAME is not configured and bot username could not be resolved" });
+        return;
+      }
+
+      const connectCode = await createConnectCode();
+      res.status(201).json({
+        code: connectCode.code,
+        botUrl: `https://t.me/${username}?start=${connectCode.code}`,
+        expiresAt: connectCode.expiresAt,
+        status: connectCode.status
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/telegram/connect-code/:code/status", async (req, res, next) => {
+    try {
+      const connectCode = await getConnectCodeStatus(req.params.code);
+      if (!connectCode) {
+        res.status(404).json({ error: "Connect code not found" });
+        return;
+      }
+
+      res.json({
+        status: connectCode.status,
+        connected: connectCode.status === "used",
+        chatIdMasked: maskChatId(connectCode.chatId),
+        username: connectCode.username || null,
+        usedAt: connectCode.usedAt
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/telegram/subscription/status", async (req, res, next) => {
+    try {
+      const chatId = typeof req.query.chatId === "string" ? req.query.chatId : "";
+      if (!chatId) {
+        res.status(400).json({ error: "chatId is required" });
+        return;
+      }
+
+      const subscriber = await getSubscriberByChatId(chatId);
+      res.json({
+        connected: Boolean(subscriber?.isActive),
+        chatIdMasked: maskChatId(subscriber?.chatId),
+        username: subscriber?.username || null,
+        subscribedToCreates: subscriber?.subscribedToCreates ?? false,
+        subscribedToResolves: subscriber?.subscribedToResolves ?? false,
+        minConfidence: subscriber?.minConfidence ?? null
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post(config.telegramWebhookPath, async (req, res, next) => {
+    try {
+      if (config.telegramWebhookSecret) {
+        const secret = req.get("X-Telegram-Bot-Api-Secret-Token");
+        if (secret !== config.telegramWebhookSecret) {
+          res.status(401).json({ error: "Invalid Telegram webhook secret" });
+          return;
+        }
+      }
+
+      await handleTelegramWebhookUpdate(req.body);
+      res.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/demo/create-signal", async (req, res, next) => {
     try {
       const result = await createDemoSignal(req.body?.kind as DemoEventKind | undefined);
@@ -87,7 +173,7 @@ export function createServer() {
 
   app.post("/api/demo/resolve-pending", async (_req, res, next) => {
     try {
-      const { results, skipped } = await resolvePendingDemoSignals();
+      const { results, skipped } = await resolvePendingDemoSignals({ latestOnly: true, notify: true });
       res.json({ resolved: results.length, skipped: skipped.length, results, skippedSignals: skipped });
     } catch (error) {
       next(error);

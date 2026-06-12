@@ -1,7 +1,7 @@
-import { resolveSignalOnChain } from "../src/chain/client.js";
 import { assertExpectedRpcChainId, config, getProofNetworkConfig } from "../src/config.js";
 import { createDemoSignal } from "../src/agent/orchestrator.js";
-import { getSignalById, markSignalResolved } from "../src/db/signals.js";
+import { resolvePendingDemoSignals } from "../src/agent/evaluators/demoEvaluator.js";
+import { getSignalById } from "../src/db/signals.js";
 import { prisma } from "../src/db/prisma.js";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -40,10 +40,11 @@ async function main() {
 
   let resolveExplorerUrl: string | null = null;
   if (process.env.RESOLVE_AFTER_CREATE === "true") {
-    const resolved = await resolveSignalOnChain(signal.chainSignalId, "Inconclusive");
-    assert(resolved.txHash, "Smoke failed: resolveTxHash missing");
-    signal = await markSignalResolved(signal.id, "Inconclusive", resolved.txHash);
-    resolveExplorerUrl = `${proof.explorerUrl}/tx/${resolved.txHash}`;
+    const resolved = await resolvePendingDemoSignals({ signalId: signal.id, notify: true });
+    assert(resolved.results.length === 1, "Smoke failed: created signal was not resolved");
+    signal = resolved.results[0].signal;
+    assert(signal.resolveTxHash, "Smoke failed: resolveTxHash missing");
+    resolveExplorerUrl = `${proof.explorerUrl}/tx/${signal.resolveTxHash}`;
   }
 
   console.log(

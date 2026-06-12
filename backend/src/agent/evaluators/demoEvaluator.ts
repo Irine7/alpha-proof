@@ -1,6 +1,7 @@
 import type { Signal } from "../../generated/prisma/index.js";
 import { readSignalOnChain, resolveSignalOnChain } from "../../chain/client.js";
-import { getPendingSignals, markSignalResolved } from "../../db/signals.js";
+import { getLatestPendingSignal, getPendingSignalById, getPendingSignals, markSignalResolved } from "../../db/signals.js";
+import { notifySignalResolved } from "../../telegram/notifier.js";
 import type { SignalOutcome } from "../../types.js";
 
 function chooseDemoOutcome(signal: Signal): SignalOutcome {
@@ -38,37 +39,75 @@ function isAlreadyResolvedError(error: unknown) {
   return message.includes("0x82cb314e") || message.includes("SignalAlreadyResolved");
 }
 
-export async function resolvePendingDemoSignals() {
-  const pending = await getPendingSignals();
-  const results = [];
-  const skipped = [];
+export type ResolvePendingDemoSignalsOptions = {
+  signalId?: number;
+  latestOnly?: boolean;
+  resolveAll?: boolean;
+  notify?: boolean;
+};
 
-  for (const signal of pending) {
-    const outcome = chooseDemoOutcome(signal);
-    try {
-      const chainResult = await resolveSignalOnChain(signal.chainSignalId ?? signal.id, outcome);
-      const updated = await markSignalResolved(signal.id, outcome, chainResult.txHash);
-      results.push({ signal: updated, mocked: chainResult.mocked });
-    } catch (error) {
-      if (isAlreadyResolvedError(error) && signal.chainSignalId !== null) {
-        try {
-          const chainSignal = await readSignalOnChain(signal.chainSignalId);
-          if (chainSignal?.status === "Resolved" && chainSignal.outcome !== "Unknown") {
-            const updated = await markSignalResolved(signal.id, chainSignal.outcome, signal.resolveTxHash);
-            results.push({ signal: updated, mocked: false, synced: true });
-            continue;
-          }
-        } catch {
-          // Keep the original resolve error as the skipped reason below.
+async function resolveOnePendingSignal(signal: Signal, notify: boolean) {
+  const outcome = chooseDemoOutcome(signal);
+  try {
+    const chainResult = await resolveSignalOnChain(signal.chainSignalId ?? signal.id, outcome);
+    const updated = await markSignalResolved(signal.id, outcome, chainResult.txHash);
+    if (notify) void notifySignalResolved(updated);
+    return { result: { signal: updated, mocked: chainResult.mocked }, skipped: null };
+  } catch (error) {
+    if (isAlreadyResolvedError(error) && signal.chainSignalId !== null) {
+      try {
+        const chainSignal = await readSignalOnChain(signal.chainSignalId);
+        if (chainSignal?.status === "Resolved" && chainSignal.outcome !== "Unknown") {
+          const updated = await markSignalResolved(signal.id, chainSignal.outcome, signal.resolveTxHash);
+          return { result: { signal: updated, mocked: false, synced: true }, skipped: null };
         }
+      } catch {
+        // Keep the original resolve error as the skipped reason below.
       }
+    }
 
-      skipped.push({
+    return {
+      result: null,
+      skipped: {
         signalId: signal.id,
         chainSignalId: signal.chainSignalId,
         reason: describeResolveError(error)
-      });
-    }
+      }
+    };
+  }
+}
+
+async function selectPendingSignals(options: ResolvePendingDemoSignalsOptions) {
+  if (options.signalId !== undefined) {
+    const signal = await getPendingSignalById(options.signalId);
+    return signal ? [signal] : [];
+  }
+
+  if (options.resolveAll) {
+    return getPendingSignals();
+  }
+
+  const latest = await getLatestPendingSignal();
+  return latest ? [latest] : [];
+}
+
+export async function resolvePendingDemoSignals(options: ResolvePendingDemoSignalsOptions = {}) {
+  const pending = await selectPendingSignals(options);
+  const results = [];
+  const skipped = [];
+
+  if (!pending.length && options.signalId !== undefined) {
+    skipped.push({
+      signalId: options.signalId,
+      chainSignalId: null,
+      reason: "Pending signal was not found in the current proof network."
+    });
+  }
+
+  for (const signal of pending) {
+    const { result, skipped: skippedSignal } = await resolveOnePendingSignal(signal, options.notify ?? !options.resolveAll);
+    if (result) results.push(result);
+    if (skippedSignal) skipped.push(skippedSignal);
   }
 
   return { results, skipped };

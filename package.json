@@ -15,7 +15,17 @@
     "proof:smoke": "pnpm --filter @alphaproof/backend proof:smoke",
     "proof:smoke:testnet": "pnpm --filter @alphaproof/backend proof:smoke:testnet",
     "proof:create-pending:testnet": "pnpm --filter @alphaproof/backend proof:create-pending:testnet",
-    "proof:seed-curated": "pnpm --filter @alphaproof/backend proof:seed-curated"
+    "proof:resolve": "pnpm --filter @alphaproof/backend proof:resolve",
+    "proof:resolve-latest": "pnpm --filter @alphaproof/backend proof:resolve-latest",
+    "proof:resolve-all": "pnpm --filter @alphaproof/backend proof:resolve-all",
+    "proof:seed-curated": "pnpm --filter @alphaproof/backend proof:seed-curated",
+    "telegram:test": "pnpm --filter @alphaproof/backend telegram:test",
+    "telegram:test:reputation": "pnpm --filter @alphaproof/backend telegram:test:reputation",
+    "telegram:test-subscription": "pnpm --filter @alphaproof/backend telegram:test-subscription",
+    "telegram:demo-flow": "pnpm --filter @alphaproof/backend telegram:demo-flow",
+    "telegram:set-webhook": "pnpm --filter @alphaproof/backend telegram:set-webhook",
+    "telegram:delete-webhook": "pnpm --filter @alphaproof/backend telegram:delete-webhook",
+    "telegram:webhook-info": "pnpm --filter @alphaproof/backend telegram:webhook-info"
   },
   "engines": {
     "node": ">=20.0.0",

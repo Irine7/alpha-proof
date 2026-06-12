@@ -101,6 +101,21 @@ export async function getSignalById(id: number) {
   return withDbRetry(() => prisma.signal.findUnique({ where: { id } }));
 }
 
+export async function getSignalByContractId(chainSignalId: number, options: { currentNetworkOnly?: boolean } = {}) {
+  return withDbRetry(() =>
+    prisma.signal.findFirst({
+      where: {
+        AND: [
+          { chainSignalId },
+          proofReadyWhere,
+          currentNetworkWhere(options.currentNetworkOnly ?? true)
+        ].filter(Boolean) as Prisma.SignalWhereInput[]
+      },
+      orderBy: { createdAt: "desc" }
+    })
+  );
+}
+
 export async function getPendingSignals(options: { currentNetworkOnly?: boolean } = {}) {
   return withDbRetry(() =>
     prisma.signal.findMany({
@@ -108,6 +123,27 @@ export async function getPendingSignals(options: { currentNetworkOnly?: boolean 
         AND: [{ status: "Pending" }, currentNetworkWhere(options.currentNetworkOnly ?? true)].filter(Boolean) as Prisma.SignalWhereInput[]
       },
       orderBy: { createdAt: "asc" }
+    })
+  );
+}
+
+export async function getLatestPendingSignal(options: { currentNetworkOnly?: boolean } = {}) {
+  return withDbRetry(() =>
+    prisma.signal.findFirst({
+      where: {
+        AND: [{ status: "Pending" }, currentNetworkWhere(options.currentNetworkOnly ?? true)].filter(Boolean) as Prisma.SignalWhereInput[]
+      },
+      orderBy: { createdAt: "desc" }
+    })
+  );
+}
+
+export async function getPendingSignalById(id: number, options: { currentNetworkOnly?: boolean } = {}) {
+  return withDbRetry(() =>
+    prisma.signal.findFirst({
+      where: {
+        AND: [{ id }, { status: "Pending" }, currentNetworkWhere(options.currentNetworkOnly ?? true)].filter(Boolean) as Prisma.SignalWhereInput[]
+      }
     })
   );
 }

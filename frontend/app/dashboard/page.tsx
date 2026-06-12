@@ -3,6 +3,7 @@ import { DemoControls } from "../../components/DemoControls";
 import { RuntimeStatusPanel } from "../../components/RuntimeStatusPanel";
 import { SignalCard } from "../../components/SignalCard";
 import { StatCard } from "../../components/StatCard";
+import { TelegramConnectCard } from "../../components/TelegramConnectCard";
 import { getRuntimeStatus, getSignals, getStats } from "../../lib/api";
 
 export default async function DashboardPage({ searchParams }: { searchParams?: Promise<{ records?: string; network?: string }> }) {
@@ -48,6 +49,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
       </div>
 
       <RuntimeStatusPanel runtime={runtime} />
+
+      <TelegramConnectCard />
 
       {stats.pendingSignals > 0 ? (
         <section className="mb-8 border border-amber-300/20 bg-amber-300/5 p-4 text-sm text-amber-100">

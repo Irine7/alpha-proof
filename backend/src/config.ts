@@ -36,6 +36,11 @@ function normalizeMarketDataMode(value: string | undefined): MarketDataMode {
   return "demo";
 }
 
+function envFlag(value: string | undefined, defaultValue: boolean) {
+  if (value === undefined || value === "") return defaultValue;
+  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
 export const config = {
   port: Number(process.env.PORT || 4000),
   databaseUrl: process.env.DATABASE_URL || "",
@@ -55,8 +60,24 @@ export const config = {
     .map((address) => address.trim())
     .filter(Boolean),
   agentPrivateKey: process.env.AGENT_PRIVATE_KEY || "",
+  telegramEnabled: envFlag(process.env.TELEGRAM_ENABLED, false),
+  telegramMode: (process.env.TELEGRAM_MODE || "polling").toLowerCase() === "webhook" ? "webhook" : "polling",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
+  telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME || "",
   telegramChatId: process.env.TELEGRAM_CHAT_ID || "",
+  telegramAdminAlerts: envFlag(process.env.TELEGRAM_ADMIN_ALERTS, false),
+  telegramAlertsOnCreate: envFlag(process.env.TELEGRAM_ALERTS_ON_CREATE, true),
+  telegramAlertsOnResolve: envFlag(process.env.TELEGRAM_ALERTS_ON_RESOLVE, true),
+  telegramAlertsForBulk: envFlag(process.env.TELEGRAM_ALERTS_FOR_BULK, false),
+  telegramAllowDemoCommand: envFlag(process.env.TELEGRAM_ALLOW_DEMO_COMMAND, false),
+  telegramAllowedDemoChatIds: (process.env.TELEGRAM_ALLOWED_DEMO_CHAT_IDS || "")
+    .split(",")
+    .map((chatId) => chatId.trim())
+    .filter(Boolean),
+  telegramWebhookUrl: process.env.TELEGRAM_WEBHOOK_URL || "",
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || "",
+  telegramWebhookPath: process.env.TELEGRAM_WEBHOOK_PATH || "/api/telegram/webhook",
+  publicAppUrl: process.env.PUBLIC_APP_URL || "",
   aiProvider: process.env.AI_PROVIDER || "mock",
   mantleExplorerUrl: process.env.MANTLE_EXPLORER_URL || DEFAULT_MANTLE_TESTNET_EXPLORER_URL
 };
@@ -205,5 +226,5 @@ export function chainRuntimeStatus() {
 }
 
 export function hasTelegramEnv() {
-  return Boolean(config.telegramBotToken && config.telegramChatId);
+  return Boolean(config.telegramEnabled && config.telegramBotToken && config.telegramChatId);
 }

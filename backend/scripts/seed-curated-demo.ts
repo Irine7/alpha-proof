@@ -90,7 +90,7 @@ async function main() {
   const created = [];
 
   for (const kind of curatedKinds) {
-    const result = await createDemoSignal(kind);
+    const result = await createDemoSignal(kind, { notify: config.telegramAlertsForBulk });
     if ((config.chainMode === "local" || config.chainMode === "testnet") && result.mockedChain) {
       throw new Error(`Curated seed stopped: CHAIN_MODE=${config.chainMode} requires real commitSignal transactions`);
     }

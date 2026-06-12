@@ -2,13 +2,13 @@ import { commitSignalOnChain } from "../chain/client.js";
 import { config, currentProofNetworkKey, getProofNetworkConfig } from "../config.js";
 import { createSignal } from "../db/signals.js";
 import { getMarketDataSource } from "../market/dataSource.js";
-import { sendSignalAlert } from "../telegram/bot.js";
+import { notifySignalCreated } from "../telegram/notifier.js";
 import type { MarketEventType } from "../types.js";
 import { hashToBytes32 } from "../utils/hash.js";
 import { analyzeSignal } from "./ai/index.js";
 import { detectSignal } from "./detectors/detector.js";
 
-export async function createDemoSignal(kind?: MarketEventType) {
+export async function createDemoSignal(kind?: MarketEventType, options: { notify?: boolean } = {}) {
   const marketDataSource = getMarketDataSource();
   const event = await marketDataSource.getNextMarketEvent(kind);
   const candidate = detectSignal(event);
@@ -81,7 +81,7 @@ export async function createDemoSignal(kind?: MarketEventType) {
     evaluationTime: analysis.evaluationTime
   });
 
-  await sendSignalAlert(signal);
+  if (options.notify ?? true) void notifySignalCreated(signal);
 
   return { signal, event: enrichedEvent, mockedChain: chainResult.mocked, marketDataSource: marketDataSource.label };
 }

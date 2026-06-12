@@ -1,6 +1,6 @@
-# AlphaProof AI
+# AlphaProof
 
-AlphaProof AI is a hackathon MVP for verifiable AI signals, predictions, and risk alerts on Mantle. It commits signal hashes before outcomes are known, stores context in Neon PostgreSQL, and turns resolved outcomes into proof-backed reputation.
+AlphaProof is a hackathon MVP for verifiable AI signals, predictions, and risk alerts on Mantle. It commits signal hashes before outcomes are known, stores context in Neon PostgreSQL, and turns resolved outcomes into proof-backed reputation.
 
 It is not a trading bot, does not custody funds, does not execute trades, and does not provide financial advice.
 
@@ -175,6 +175,192 @@ pnpm proof:create-pending:testnet
 
 This requires `CHAIN_MODE=testnet` and `MARKET_DATA_MODE=historical_mainnet`, creates one real `commitSignal` transaction, prints the Mantle Sepolia explorer link, does not resolve the signal, and does not clean Neon.
 
+## Telegram Bot
+
+AlphaProof can run a Telegram bot as an alert/distribution layer for proof-backed signals. It supports user subscriptions through a dashboard connect link, polling for local/demo runs, and webhook mode for deployed backends.
+
+1. Create a bot with BotFather.
+2. Add backend env:
+
+```env
+TELEGRAM_ENABLED=true
+TELEGRAM_MODE=polling
+TELEGRAM_BOT_TOKEN="<token>"
+TELEGRAM_BOT_USERNAME="<bot username>"
+TELEGRAM_CHAT_ID="<chat id>"
+TELEGRAM_ADMIN_ALERTS=false
+PUBLIC_APP_URL=https://your-public-url
+TELEGRAM_ALERTS_ON_CREATE=true
+TELEGRAM_ALERTS_ON_RESOLVE=true
+TELEGRAM_ALERTS_FOR_BULK=false
+TELEGRAM_WEBHOOK_URL=
+TELEGRAM_WEBHOOK_SECRET=
+TELEGRAM_ALLOW_DEMO_COMMAND=false
+```
+
+For local testing, `PUBLIC_APP_URL=http://localhost:3000` is fine. For demo video/submission, use a public frontend URL such as Vercel, Render, or a tunnel URL so Telegram can render dashboard inline buttons.
+
+3. Run the backend:
+
+```bash
+cd backend
+pnpm dev
+```
+
+4. Test the latest-signal alert without creating a new signal or writing to chain:
+
+```bash
+pnpm telegram:test
+```
+
+To test the reputation card:
+
+```bash
+pnpm telegram:test:reputation
+```
+
+To create or reactivate a subscriber from the configured demo chat:
+
+```bash
+pnpm telegram:test-subscription
+```
+
+## Telegram User Subscriptions And Web Connect Flow
+
+1. Start the backend in polling mode:
+
+```bash
+cd backend
+pnpm dev
+```
+
+2. Open the dashboard.
+3. Click `Connect Telegram Alerts`.
+4. AlphaProof creates a one-time connect code and opens:
+
+```text
+https://t.me/<bot_username>?start=<connect_code>
+```
+
+5. The bot receives `/start <connect_code>`, links the Telegram chat to an active subscriber, and confirms the subscription.
+6. The dashboard polls the connect-code status and shows `Telegram connected`.
+7. Future create/resolve alerts go to active subscribers.
+
+`TELEGRAM_CHAT_ID` remains a demo/admin fallback. If no active subscribers exist, AlphaProof can still send to `TELEGRAM_CHAT_ID`. Set `TELEGRAM_ADMIN_ALERTS=true` only when you intentionally want the admin chat to receive alerts even when subscribers exist.
+
+Subscription commands:
+
+```text
+/subscribe
+/unsubscribe
+/status
+/settings
+/minconfidence 70
+/minconfidence off
+/types all
+/types Whale Accumulation,Liquidity Shock
+```
+
+`/minconfidence 75` suppresses alerts below 75% confidence for that subscriber. Signal-type preferences are stored for future filtering and can be updated with `/types`.
+
+## Telegram Webhook Mode
+
+Polling and webhooks are mutually exclusive in Telegram. Local/dev should use:
+
+```env
+TELEGRAM_MODE=polling
+```
+
+For a deployed backend:
+
+```env
+TELEGRAM_MODE=webhook
+TELEGRAM_WEBHOOK_URL=https://your-api-domain.com/api/telegram/webhook
+TELEGRAM_WEBHOOK_SECRET="<random secret>"
+TELEGRAM_WEBHOOK_PATH=/api/telegram/webhook
+```
+
+Set, inspect, or delete the webhook explicitly:
+
+```bash
+pnpm telegram:set-webhook
+pnpm telegram:webhook-info
+pnpm telegram:delete-webhook
+```
+
+When `TELEGRAM_WEBHOOK_SECRET` is set, the backend validates Telegram's `X-Telegram-Bot-Api-Secret-Token` header. The backend does not call `setWebhook` automatically on boot.
+
+## Telegram Demo Flow
+
+Create one pending proof signal for the demo:
+
+```bash
+pnpm telegram:demo-flow
+```
+
+Expected result: Telegram receives a compact proof-backed alert with:
+
+- Open Proof Tx button
+- View Signal button when `PUBLIC_APP_URL` is public
+- Reputation button when `PUBLIC_APP_URL` is public
+
+Resolve exactly the created signal:
+
+```bash
+pnpm proof:resolve --signal-id <DB_SIGNAL_ID>
+```
+
+Or create and resolve one signal in a single demo script run:
+
+```powershell
+$env:DEMO_RESOLVE_AFTER_CREATE="true"
+pnpm telegram:demo-flow
+Remove-Item Env:\DEMO_RESOLVE_AFTER_CREATE
+```
+
+Resolve the latest pending signal:
+
+```bash
+pnpm proof:resolve-latest
+```
+
+Expected result: Telegram receives a resolved update with the outcome and resolve transaction button.
+
+Bulk resolve is explicit and guarded:
+
+```powershell
+$env:CONFIRM_RESOLVE_ALL="YES"
+pnpm proof:resolve-all
+Remove-Item Env:\CONFIRM_RESOLVE_ALL
+```
+
+Bulk operations do not send Telegram alerts unless `TELEGRAM_ALERTS_FOR_BULK=true`.
+
+Telegram does not allow `localhost` URLs in inline keyboard buttons. With `PUBLIC_APP_URL=http://localhost:3000`, dashboard links are still controlled by `PUBLIC_APP_URL`, but dashboard buttons are omitted. Use a public HTTPS URL when you want `View Signal` and `Reputation` buttons.
+
+Bot commands:
+
+```text
+/start
+/latest
+/pending
+/reputation
+/signal <id>
+/signal contract:<id>
+/subscribe
+/unsubscribe
+/status
+/settings
+/minconfidence 70
+/types all
+/demo
+/help
+```
+
+If `TELEGRAM_ENABLED=false`, the backend logs `Telegram disabled.` and does not start polling. If `TELEGRAM_ENABLED=true` but `TELEGRAM_BOT_TOKEN` is missing, polling and alerts are disabled with a warning. If `TELEGRAM_CHAT_ID` is missing, bot commands can still work, but auto-alerts are disabled with a warning.
+
+No trading. No custody. Not financial advice.
+
 ## Curated Demo Seed
 
 From the repo root:
@@ -185,7 +371,7 @@ pnpm proof:seed-curated
 
 The seed script does not clean the database. It creates 10 proof-ready signals for the current proof network: 8 resolved and 2 pending, with Correct, Failed, and Inconclusive outcomes across different signal types.
 
-In `local` and `testnet` modes, real `commitSignal` and `resolveSignal` transactions are required. If a chain write fails, the script stops and reports the error. In `mock` mode, mock hashes are allowed and the UI marks them as mock.
+In `local` and `testnet` modes, real `commitSignal` and `resolveSignal` transactions are required. If a chain write fails, the script stops and reports the error. In `mock` mode, mock hashes are allowed and the UI marks them as mock. Seed/bulk operations suppress Telegram alerts by default; set `TELEGRAM_ALERTS_FOR_BULK=true` only when you intentionally want those messages.
 
 ## Running The App
 
@@ -251,41 +437,19 @@ EXPECTED_CHAIN_ID=5003
 SIGNAL_REGISTRY_ADDRESS="<deployed address>"
 AGENT_PRIVATE_KEY="<testnet wallet private key>"
 DATABASE_URL="<Neon PostgreSQL URL>"
+TELEGRAM_ENABLED=true
+TELEGRAM_MODE=polling
+TELEGRAM_BOT_TOKEN="<token>"
+TELEGRAM_BOT_USERNAME="<bot username>"
+TELEGRAM_CHAT_ID="<chat id>"
+TELEGRAM_ADMIN_ALERTS=false
+PUBLIC_APP_URL="https://your-public-url"
+TELEGRAM_ALERTS_ON_CREATE=true
+TELEGRAM_ALERTS_ON_RESOLVE=true
+TELEGRAM_ALERTS_FOR_BULK=false
 ```
 
-3. Create one pending signal:
-
-```bash
-pnpm proof:smoke:testnet
-```
-
-or:
-
-```bash
-pnpm proof:create-pending:testnet
-```
-
-4. Optional curated dataset:
-
-```bash
-pnpm proof:seed-curated
-```
-
-5. Resolve:
-
-```powershell
-$env:RESOLVE_AFTER_CREATE="true"
-pnpm proof:smoke:testnet
-Remove-Item Env:\RESOLVE_AFTER_CREATE
-```
-
-or:
-
-```bash
-pnpm --filter @alphaproof/backend proof:resolve
-```
-
-6. Start services:
+3. Start services:
 
 ```bash
 cd backend
@@ -297,22 +461,58 @@ cd frontend
 pnpm dev
 ```
 
-7. Open:
+4. Open the dashboard and click `Connect Telegram Alerts`.
+
+5. Open the Telegram deep link and wait for the bot confirmation.
+
+6. Create one pending signal:
+
+```bash
+pnpm telegram:demo-flow
+```
+
+7. Show Telegram alert, then tap `Open Proof Tx` and `View Signal` from Telegram.
+
+8. Optional curated dataset:
+
+```bash
+pnpm proof:seed-curated
+```
+
+9. Resolve exactly one signal:
+
+```powershell
+$env:RESOLVE_AFTER_CREATE="true"
+pnpm proof:smoke:testnet
+Remove-Item Env:\RESOLVE_AFTER_CREATE
+```
+
+or:
+
+```bash
+pnpm proof:resolve --signal-id <DB_SIGNAL_ID>
+```
+
+10. Show Telegram resolve update, then open:
 
 ```text
 http://localhost:3000/dashboard
 http://localhost:3000/reputation
 ```
 
-8. Demo video checklist:
+11. Demo video checklist:
 
 - Show dashboard runtime panel.
+- Click Connect Telegram Alerts.
+- Show Telegram subscription confirmation.
 - Show Mantle Sepolia contract link.
 - Create proof signal.
+- Show Telegram proof-backed alert.
 - Open proof tx in explorer.
 - Open signal detail.
 - Show source event, dataHash, and reasoningHash.
-- Resolve pending.
+- Resolve exactly the demo signal.
+- Show Telegram resolve update.
 - Show reputation update.
 
 ## Checks
@@ -348,5 +548,5 @@ pnpm proof:smoke
 - No custody or user funds.
 - Not financial advice.
 - No AgentIdentity contract in this demo.
-- No Telegram bot in the Mantle Sepolia proof flow.
+- Telegram is alerts only; it does not trade, custody funds, take payments, or connect wallets.
 - No automatic Neon cleanup.

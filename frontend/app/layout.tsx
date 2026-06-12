@@ -4,7 +4,7 @@ import { getRuntimeStatus } from "../lib/api";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AlphaProof AI",
+  title: "AlphaProof",
   description: "Verifiable AI signal agent for Mantle Network."
 };
 
