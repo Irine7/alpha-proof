@@ -12,7 +12,7 @@ const nav = [
   { href: "/", label: "Home" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/reputation", label: "Reputation" }
+  { href: "/reputation", label: "Reputation" },
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,13 +25,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </div>
 
         {/* Navbar - Strict & Minimal */}
-        <nav className="fixed w-full z-50 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/10">
-          <div className="flex justify-between items-center px-6 py-4 max-w-[1400px] mx-auto">
-            <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
-              <div className="w-2 h-2 bg-white" />
-              <span className="text-white font-medium tracking-tight">ALPHAPROOF<span className="text-zinc-600">.AI</span></span>
+        <nav className="fixed w-full z-50 bg-[#020403]/92 backdrop-blur-md border-b border-white/10">
+          <div className="flex h-24 items-center justify-between px-6 md:px-[58px]">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+              <span className="grid h-7 w-7 place-items-center rounded-[7px] bg-mantle text-sm font-black text-black shadow-[0_0_28px_rgba(0,224,164,0.42)]">
+                A
+              </span>
+              <span className="text-white font-bold tracking-tight">ALPHAPROOF<span className="text-zinc-500">.AI</span></span>
             </Link>
-            <div className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
+            <div className="hidden items-center gap-9 text-sm text-zinc-400 md:flex">
               {nav.map((item) => (
                 <Link key={item.href} href={item.href} className="hover:text-white transition-colors">
                   {item.label}

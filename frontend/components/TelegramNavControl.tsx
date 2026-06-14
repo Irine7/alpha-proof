@@ -220,7 +220,7 @@ export function TelegramNavControl() {
       type="button"
       onClick={() => void createConnectCode()}
       disabled={isLoading}
-      className="hidden items-center justify-center gap-2 border border-white/10 bg-[#0a0a0a] px-4 py-2 font-mono text-xs uppercase tracking-wider text-zinc-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:border-mantle/40 hover:text-mantle disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
+      className="hidden items-center justify-center gap-2 rounded-[12px] border border-mantle/40 bg-mantle/5 px-5 py-3 text-sm font-semibold text-zinc-100 transition-colors hover:border-mantle/70 hover:bg-mantle/10 disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
     >
       {isLoading ? <RefreshCw size={14} className="animate-spin" aria-hidden /> : <Send size={14} aria-hidden />}
       {state === "waiting" ? "Open Telegram" : "Connect Telegram"}

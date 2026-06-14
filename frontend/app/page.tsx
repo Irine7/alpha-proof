@@ -2,73 +2,136 @@ import Link from 'next/link';
 import { 
   ArrowRight, 
   ShieldCheck, 
-  Terminal, 
   Database, 
   Cpu, 
   CheckCircle2
 } from 'lucide-react';
-import { LocalClock } from "../components/LocalClock";
+import { HeroTelegramAlert } from "../components/HeroTelegramAlert";
+import { HeroTelegramConnectButton } from "../components/HeroTelegramConnectButton";
 import { getRuntimeStatus, getSignals, getStats } from "../lib/api";
-import { predictionLabel, shortHash } from "../lib/format";
+import { evaluationPendingLabel, explorerTxUrl, predictionLabel, shortHash } from "../lib/format";
+import type { Signal } from "../lib/types";
 
 export default async function Landing() {
   const [signals, stats, runtime] = await Promise.all([getSignals(), getStats(), getRuntimeStatus()]);
-  const latestSignal = signals[0] || null;
+  const latestSignal = latestByCreatedAt(signals);
   const tickerSignals = signals.length ? [...signals.slice(0, 5), ...signals.slice(0, 5)] : [];
-  const demoLabel = runtime.marketDataMode === "live_mainnet" ? "Run Live Demo" : "Run Proof Demo";
+  const signalPair = latestSignal ? assetPair(latestSignal) : "Not available";
+  const signalTitle = latestSignal ? `${latestSignal.signalType} detected` : "No proof signal yet";
+  const signalSummary = latestSignal
+    ? cleanSignalText(latestSignal.aiSummary) || "A Mantle event was committed before the outcome is known."
+    : "Open the dashboard and create a proof signal to populate this card with live agent data.";
+  const latestProofTxUrl = explorerTxUrl(latestSignal?.commitTxHash, runtime.txExplorerBaseUrl);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-white selection:text-black">
       <main className="relative z-10 pt-32 pb-20 max-w-[1400px] mx-auto">
-        {/* Hero Section - Asymmetric, Data-driven */}
-        <div className="px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-end min-h-[60vh]">
-          <div className="lg:col-span-8 space-y-8">
-            <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-wider text-zinc-500">
-              <span className="flex items-center gap-2 text-mantle">
-                <span className="w-2 h-2 bg-mantle rounded-full animate-pulse" />
-                Runtime Interface
-              </span>
-              <span>{"//"}</span>
-              <span>{runtime.proofNetwork}</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-medium text-white tracking-tighter leading-[1.05]">
-              Quant-grade AI<br />
-              <span className="text-zinc-500">On-chain verified</span>
-            </h1>
-            
-            <p className="max-w-xl text-lg text-zinc-400 leading-relaxed font-light">
-              Raw blockchain activity is transformed into verifiable AI signals through detection, reasoning, and on-chain commitment.
-            </p>
+        {/* Hero Section - Telegram-first proof alerts */}
+        <section className="relative overflow-hidden px-6 pt-14 md:px-[78px] lg:min-h-[820px]">
+          <div className="grid gap-12 lg:grid-cols-[0.95fr_0.85fr] lg:items-start">
+            <div>
+              <div className="mb-7 flex items-center gap-3 font-mono text-xs font-bold uppercase tracking-[0.22em] text-mantle">
+                <span className="h-2 w-2 rounded-full bg-mantle shadow-[0_0_18px_rgba(0,224,164,0.8)]" />
+                Proof-backed AI alerts for Mantle
+              </div>
 
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Link href="/dashboard" className="bg-white text-black px-6 py-3 text-sm font-medium hover:bg-zinc-200 transition-colors flex items-center gap-2">
-                {demoLabel} <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a href="https://github.com/Irine7/alpha-proof" target="_blank" rel="noreferrer" className="border border-white/10 hover:border-white/30 text-white px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 bg-[#0a0a0a]">
-                <Terminal className="w-4 h-4" /> View Contracts
-              </a>
+              <h1 className="max-w-[660px] text-6xl font-semibold leading-[0.96] tracking-tighter text-white md:text-7xl lg:text-[88px]">
+                AI signals<br />
+                <span className="text-zinc-500">you can verify</span>
+              </h1>
+
+              <p className="mt-8 max-w-[600px] text-xl font-light leading-relaxed text-zinc-400">
+                AlphaProof turns Mantle market events into simple Telegram alerts, commits every prediction on-chain,
+                and tracks agent reputation over time.
+              </p>
+
+              <div className="mt-9 flex flex-wrap gap-4">
+                <Link href="/dashboard" className="flex items-center gap-3 rounded-[10px] bg-white px-6 py-4 text-sm font-bold text-black transition-colors hover:bg-zinc-200">
+                  Connect Telegram Alerts <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="/dashboard" className="rounded-[10px] border border-white/15 bg-[#0a0a0a]/80 px-6 py-4 text-sm font-bold text-white transition-colors hover:border-white/30">
+                  View Live Dashboard
+                </Link>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3 text-sm font-bold text-emerald-100">
+                <span>No trading</span>
+                <span className="text-zinc-600">·</span>
+                <span>No custody</span>
+                <span className="text-zinc-600">·</span>
+                <span>Not financial advice</span>
+              </div>
+            </div>
+
+            <div className="relative min-h-[520px] lg:min-h-[480px]">
+              <div className="relative ml-auto w-full max-w-[560px] rounded-[24px] border border-mantle/20 bg-[#0b1712]/90 shadow-2xl shadow-black/50 backdrop-blur-md">
+                <div className="flex items-center justify-between border-b border-white/10 px-6 py-6">
+                  <p className="font-mono text-sm font-bold uppercase tracking-[0.18em] text-zinc-500">Latest proof-backed signal</p>
+                  <span className="rounded-full bg-[#94ffc0] px-4 py-2 text-sm font-bold text-[#052011]">
+                    {latestSignal?.status || "Pending"}
+                  </span>
+                </div>
+
+                <div className="p-7">
+                  <h2 className="text-3xl font-semibold tracking-tight text-white">{signalTitle}</h2>
+                  <p className="mt-4 max-w-[500px] text-base leading-relaxed text-zinc-400">{signalSummary}</p>
+
+                  <div className="mt-6 flex flex-wrap gap-3 text-sm">
+                    <SignalPill label="Pair" value={signalPair} />
+                    <SignalPill label="Confidence" value={`${latestSignal?.confidence ?? stats.averageConfidence}%`} />
+                    <SignalPill label="Evaluation" value={latestSignal ? evaluationShort(latestSignal.evaluationTime) : "Not available"} />
+                  </div>
+
+                  <div className="mt-6 rounded-[18px] border border-mantle/25 bg-mantle/[0.04] p-4 font-mono text-sm">
+                    <ProofRow label="Contract Signal ID" value={latestSignal?.chainSignalId ? `#${latestSignal.chainSignalId}` : "Not available"} />
+                    <ProofRow label="Proof Tx" value={shortHash(latestSignal?.commitTxHash)} />
+                    <ProofRow label="Status" value={latestSignal?.status === "Resolved" ? latestSignal.outcome : "Committed before outcome"} strong />
+                  </div>
+
+                  {latestProofTxUrl ? (
+                    <a
+                      href={latestProofTxUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-5 block rounded-[12px] bg-[#e6c45a] px-5 py-4 text-center text-sm font-bold text-black transition-colors hover:bg-[#f0d778]"
+                    >
+                      Open Proof Tx
+                    </a>
+                  ) : (
+                    <span className="mt-5 block cursor-not-allowed rounded-[12px] bg-[#e6c45a]/60 px-5 py-4 text-center text-sm font-bold text-black/70">
+                      Proof Tx unavailable
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <HeroTelegramAlert
+                signalType={latestSignal?.signalType || "No signal yet"}
+                pair={signalPair}
+                confidence={`${latestSignal?.confidence ?? stats.averageConfidence}%`}
+                proofHash={shortHash(latestSignal?.commitTxHash)}
+              />
+
+              <div className="absolute bottom-[24px] right-0 w-full max-w-[342px] rounded-[18px] border border-mantle/25 bg-[#071611]/95 p-5 shadow-2xl shadow-black/50 backdrop-blur-md lg:bottom-auto lg:left-[-86px] lg:right-auto lg:top-[530px]">
+                <h3 className="text-xl font-bold text-white">Get alerts in Telegram</h3>
+                <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                  Connect once and receive proof-backed signals as soon as AlphaProof commits them on-chain.
+                </p>
+                <HeroTelegramConnectButton />
+              </div>
+              
             </div>
           </div>
 
-          <div className="lg:col-span-4 border-l border-white/10 pl-6 space-y-6 hidden lg:block">
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono text-zinc-500">AVG SIGNAL CONFIDENCE</div>
-              <div className="text-3xl font-light text-white">{stats.averageConfidence}%</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono text-zinc-500">SIGNALS IN NEON</div>
-              <div className="text-3xl font-light text-white">{stats.totalSignals}</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono text-zinc-500">LOCAL SYSTEM TIME</div>
-              <div className="text-3xl font-light text-white font-mono"><LocalClock /></div>
-            </div>
+          <div className="mt-6 grid gap-3 md:grid-cols-3 lg:-mt-8 lg:grid-cols-[208px_208px_208px]">
+            <HeroMetric label="Proof network" value={runtime.proofNetwork.includes("Mantle") ? "Mantle" : runtime.proofNetwork} subvalue={runtime.proofNetwork.includes("Sepolia") ? "Sepolia" : undefined} />
+            <HeroMetric label="Signals tracked" value={String(stats.totalSignals)} />
+            <HeroMetric label="Alerts channel" value="Telegram" />
           </div>
-        </div>
+        </section>
 
         {/* Technical Ticker */}
-        <div className="mt-20 border-y border-white/10 flex overflow-hidden bg-white/[0.02]">
+        <div className="mt-2 border-y border-white/10 flex overflow-hidden bg-white/[0.02]">
           <div className="flex whitespace-nowrap animate-marquee py-3 text-xs font-mono text-zinc-500">
             {tickerSignals.length ? (
               tickerSignals.map((signal, index) => (
@@ -213,4 +276,65 @@ export default async function Landing() {
       </footer>
     </div>
   );
+}
+
+function SignalPill({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="rounded-[11px] border border-white/10 bg-white/[0.04] px-3 py-2 text-zinc-300">
+      {label} <strong className="text-white">{value}</strong>
+    </span>
+  );
+}
+
+function ProofRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] gap-4 border-b border-dashed border-white/10 py-2 last:border-b-0">
+      <span className="text-zinc-500">{label}</span>
+      <span className={strong ? "font-bold text-[#f0d778]" : "text-zinc-200"}>{value}</span>
+    </div>
+  );
+}
+
+function HeroMetric({ label, value, subvalue }: { label: string; value: string; subvalue?: string }) {
+  return (
+    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] px-5 py-5">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">{label}</p>
+      <p className="mt-3 text-3xl font-bold tracking-tight text-white">
+        {value}
+        {subvalue ? <span className="ml-1 text-sm text-zinc-400">{subvalue}</span> : null}
+      </p>
+    </div>
+  );
+}
+
+function StepCard({ number, title, text }: { number: string; title: string; text: string }) {
+  return (
+    <div className="min-h-[150px] rounded-[20px] border border-white/10 bg-[#0a0a0a]/90 p-6">
+      <span className="grid h-9 w-9 place-items-center rounded-[10px] border border-mantle/35 bg-mantle/15 font-mono font-bold text-mantle">
+        {number}
+      </span>
+      <h3 className="mt-5 text-xl font-bold text-white">{title}</h3>
+      <p className="mt-3 text-sm leading-relaxed text-zinc-500">{text}</p>
+    </div>
+  );
+}
+
+function assetPair(signal: Signal) {
+  if (signal.asset.includes("/")) return signal.asset;
+  return signal.counterAsset ? `${signal.asset}/${signal.counterAsset}` : signal.asset;
+}
+
+function latestByCreatedAt(signals: Signal[]) {
+  return [...signals].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+}
+
+function evaluationShort(value: string) {
+  return evaluationPendingLabel(value)
+    .replace("Evaluation ", "")
+    .replace(" · Still pending", "");
+}
+
+function cleanSignalText(value?: string | null) {
+  if (!value) return "";
+  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }

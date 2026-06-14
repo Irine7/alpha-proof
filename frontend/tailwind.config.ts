@@ -12,8 +12,10 @@ const config: Config = {
         dangerproof: "#FF5C7A"
       },
       fontFamily: {
-        display: ["var(--font-display)", "Georgia", "serif"],
-        body: ["var(--font-body)", "ui-sans-serif", "system-ui"]
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
+        display: ["var(--font-sans)"],
+        body: ["var(--font-sans)"]
       },
       boxShadow: {
         proof: "0 24px 80px rgba(0, 224, 164, 0.14)"
