@@ -20,19 +20,24 @@ function cleanBaseUrl(value: string) {
   return trimmed ? trimmed.replace(/\/+$/, "") : "";
 }
 
+function isPrivateHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  if (host === "localhost" || host === "::1" || host.endsWith(".local")) return true;
+  if (host === "127.0.0.1" || host.startsWith("127.")) return true;
+  if (host === "0.0.0.0") return true;
+  if (host.startsWith("10.")) return true;
+  if (host.startsWith("192.168.")) return true;
+  const private172 = host.match(/^172\.(1[6-9]|2\d|3[0-1])\./);
+  return Boolean(private172);
+}
+
 export function isPublicAppUrl(url: string | undefined) {
   const trimmed = cleanBaseUrl(url || "");
   if (!trimmed) return false;
 
   try {
     const parsed = new URL(trimmed);
-    const hostname = parsed.hostname.toLowerCase();
-    return (
-      ["http:", "https:"].includes(parsed.protocol) &&
-      hostname !== "localhost" &&
-      hostname !== "127.0.0.1" &&
-      hostname !== "::1"
-    );
+    return parsed.protocol === "https:" && !isPrivateHost(parsed.hostname);
   } catch {
     return false;
   }
@@ -118,7 +123,7 @@ export function formatEvaluationTime(evaluationTime: Date | string | null | unde
   if (Number.isNaN(date.getTime())) return "not scheduled";
 
   const diffMs = date.getTime() - Date.now();
-  if (diffMs <= 0) return "due now";
+  if (diffMs <= 0) return "Evaluation due · waiting for outcome resolution";
 
   const minutes = Math.ceil(diffMs / 60_000);
   if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? "" : "s"}`;
@@ -200,19 +205,12 @@ function contractAddressLabel(address: string | null | undefined) {
 
 export function formatStartMessage() {
   return [
-    "AlphaProof AI watches Mantle market events and commits AI signals on-chain before outcomes are known.",
+    "AlphaProof watches Mantle market events and commits AI signals on-chain before outcomes are known.",
     "",
     "No trading. No custody. Not financial advice.",
     "",
-    "Commands:",
-    "/latest - latest proof-backed signal",
-    "/pending - latest pending proof signal",
-    "/reputation - current agent reputation",
-    "/signal &lt;id&gt; - signal details",
-    "/subscribe - enable Telegram alerts",
-    "/settings - alert preferences",
-    "/demo - create one demo proof signal when enabled",
-    "/help - commands"
+    "Use /subscribe to enable alerts, or connect from the AlphaProof dashboard.",
+    "Use /help for commands."
   ].join("\n");
 }
 
@@ -220,26 +218,40 @@ export function formatHelpMessage() {
   return [
     "<b>AlphaProof commands</b>",
     "",
-    "/start - intro",
+    "/start - connect or start AlphaProof",
     "/latest - latest proof-backed signal",
-    "/pending - latest pending proof signal",
+    "/pending - pending signal committed before outcome",
     "/reputation - current agent reputation",
     "/signal &lt;id&gt; - signal details",
-    "/signal db:&lt;id&gt; - signal details by DB id",
-    "/signal contract:&lt;id&gt; - signal details by contract id",
-    "/subscribe - enable Telegram alerts",
-    "/unsubscribe - disable Telegram alerts",
     "/status - subscription status",
-    "/settings - alert preferences",
-    "/minconfidence 70 - set alert confidence floor",
-    "/minconfidence off - clear confidence floor",
-    "/types all - receive every signal type",
-    "/types Whale Accumulation,Liquidity Shock - filter signal types",
-    "/demo - create one demo proof signal when enabled",
+    "/alerts on - enable alerts",
+    "/alerts off - disable alerts",
+    "/alerts status - show alert status",
+    "/settings - alert settings",
+    "/minconfidence 75 - set alert threshold",
+    "/minconfidence off - remove threshold",
+    "/subscribe - enable Telegram alerts",
+    "/unsubscribe - disable alerts but keep connection",
+    "/disconnect - unlink Telegram from AlphaProof",
     "/help - commands",
     "",
     "No trading. No custody. Not financial advice."
   ].join("\n");
+}
+
+export function formatTelegramConnectionTestAlert(alertsDisabled = false) {
+  return [
+    "✅ <b>AlphaProof Telegram alerts are connected.</b>",
+    "",
+    alertsDisabled ? "<b>Telegram connection works, but alerts are currently disabled.</b>" : null,
+    alertsDisabled ? "Use /subscribe or /alerts on to re-enable signal alerts." : null,
+    alertsDisabled ? "" : null,
+    "You will receive proof-backed AI signals here when AlphaProof commits them on-chain.",
+    "",
+    "No trading. No custody. Not financial advice."
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 }
 
 export function formatSignalAlert(signal: Signal) {
@@ -266,7 +278,11 @@ export function formatSignalAlert(signal: Signal) {
   ];
 
   if (signal.status === "Pending") {
-    lines.push("", `Evaluation: <b>${escapeHtml(formatEvaluationTime(signal.evaluationTime))}</b>`, "Committed before outcome.");
+    const evaluation = formatEvaluationTime(signal.evaluationTime);
+    const evaluationLine = evaluation.startsWith("Evaluation due")
+      ? `<b>${escapeHtml(evaluation)}</b>`
+      : `Evaluation: <b>${escapeHtml(evaluation)}</b>`;
+    lines.push("", evaluationLine, "Committed before outcome.");
   }
 
   lines.push("", "No trading. No custody. Not financial advice.");
@@ -305,6 +321,15 @@ export function formatLatestSignal(signal: Signal) {
 
 export function formatReputation(stats: AgentStats) {
   const runtime = chainRuntimeStatus();
+  const lastUpdated = new Date().toLocaleString("en-US", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
 
   return [
     "📊 <b>AlphaProof Reputation</b>",
@@ -325,6 +350,8 @@ export function formatReputation(stats: AgentStats) {
     `Best type: <b>${escapeHtml(stats.bestSignalType || "n/a")}</b>`,
     `Weakest type: <b>${escapeHtml(stats.worstSignalType || "n/a")}</b>`,
     "",
-    "Accuracy excludes inconclusive signals."
+    "Accuracy excludes inconclusive signals.",
+    "Stats scoped to current proof network.",
+    `Last updated: <b>${escapeHtml(lastUpdated)} UTC</b>`
   ].join("\n");
 }

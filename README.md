@@ -198,7 +198,7 @@ TELEGRAM_WEBHOOK_SECRET=
 TELEGRAM_ALLOW_DEMO_COMMAND=false
 ```
 
-For local testing, `PUBLIC_APP_URL=http://localhost:3000` is fine. For demo video/submission, use a public frontend URL such as Vercel, Render, or a tunnel URL so Telegram can render dashboard inline buttons.
+For local testing, `PUBLIC_APP_URL=http://localhost:3000` is fine. For demo video/submission, use a public HTTPS frontend URL such as Vercel, Render, or an HTTPS tunnel URL so Telegram can render dashboard inline buttons.
 
 3. Run the backend:
 
@@ -225,6 +225,24 @@ To create or reactivate a subscriber from the configured demo chat:
 pnpm telegram:test-subscription
 ```
 
+To verify delivery rules without Telegram sends, database writes, or chain writes:
+
+```bash
+pnpm telegram:test-delivery-rules
+```
+
+The dry-run checks that confidence 68 is blocked by a 75% threshold, confidence 80 is allowed, `minConfidence=off` allows delivery, inactive subscribers are blocked, create/resolve preferences are respected, admin fallback delivery works when there are no subscribers, and admin/subscriber chat IDs are deduped.
+
+Register, inspect, or remove the Telegram command menu:
+
+```bash
+pnpm telegram:set-commands
+pnpm telegram:get-commands
+pnpm telegram:delete-commands
+```
+
+These commands require `TELEGRAM_BOT_TOKEN`. If the token is not configured, the script exits gracefully without printing secrets.
+
 ## Telegram User Subscriptions And Web Connect Flow
 
 1. Start the backend in polling mode:
@@ -243,16 +261,40 @@ https://t.me/<bot_username>?start=<connect_code>
 ```
 
 5. The bot receives `/start <connect_code>`, links the Telegram chat to an active subscriber, and confirms the subscription.
-6. The dashboard polls the connect-code status and shows `Telegram connected`.
-7. Future create/resolve alerts go to active subscribers.
+6. The dashboard polls the connect-code status and shows `Telegram connected`, whether alerts are enabled or disabled, create/resolve toggles, min confidence, signal type filter, and a masked chat or username.
+7. Click `Send Test Alert` to verify the Telegram connection without creating a signal record, writing to chain, changing stats/reputation, or spending gas. The endpoint is rate limited to one test alert per connected chat/code every 30 seconds.
+8. Future create/resolve alerts go to active subscribers.
 
 `TELEGRAM_CHAT_ID` remains a demo/admin fallback. If no active subscribers exist, AlphaProof can still send to `TELEGRAM_CHAT_ID`. Set `TELEGRAM_ADMIN_ALERTS=true` only when you intentionally want the admin chat to receive alerts even when subscribers exist.
+
+## Polished Telegram User Flow
+
+1. Open the dashboard.
+2. Click `Connect Telegram Alerts`.
+3. Telegram opens through the deep link.
+4. Press `Start`.
+5. The dashboard changes to `Telegram connected`.
+6. Click `Send Test Alert` to confirm delivery without a blockchain transaction.
+7. Use `/settings` to manage alerts.
+8. Optionally set `/minconfidence 75`.
+9. Create a proof signal from the dashboard.
+10. Telegram receives the proof-backed alert only if it passes the subscriber's preferences. Fresh demo pending signals use a future evaluation window, usually about 30 minutes.
+11. Tap `Open Proof Tx`.
+12. Resolve the signal.
+13. Telegram receives the outcome update.
+14. Reputation updates on the dashboard and in `/reputation`.
+
+No MetaMask or wallet connection is required to receive alerts. AlphaProof does not trade, custody funds, or provide financial advice.
 
 Subscription commands:
 
 ```text
 /subscribe
 /unsubscribe
+/disconnect
+/alerts on
+/alerts off
+/alerts status
 /status
 /settings
 /minconfidence 70
@@ -262,6 +304,21 @@ Subscription commands:
 ```
 
 `/minconfidence 75` suppresses alerts below 75% confidence for that subscriber. Signal-type preferences are stored for future filtering and can be updated with `/types`.
+
+`/unsubscribe` keeps the dashboard connection but disables alerts. The web card shows Telegram connected with alerts disabled, and `/subscribe` or `/alerts on` re-enables delivery. `/disconnect` unlinks the old dashboard connect code from Telegram; the web card returns to not connected, and reconnecting requires a new dashboard link.
+
+Manual lookup commands (`/latest`, `/pending`, `/signal <id>`) still show the requested signal even when it is below the subscriber's alert threshold. In that case, Telegram adds a note explaining that manual lookup bypasses alert filtering. Automatic alerts still respect `minConfidence` and do not deliver below-threshold signals.
+
+Manual delivery QA without automatic gas-spending commands:
+
+1. Set `/minconfidence 75`.
+2. Create a signal with confidence below 75 from the dashboard only when you intentionally want a real proof transaction; no auto-alert should arrive.
+3. Set `/minconfidence off`.
+4. Create a proof signal; an auto-alert should arrive.
+5. Send `/unsubscribe`.
+6. Create a proof signal; no subscriber auto-alert should arrive.
+7. Send `/subscribe`.
+8. Create a proof signal; an auto-alert should arrive again.
 
 ## Telegram Webhook Mode
 
@@ -283,12 +340,13 @@ TELEGRAM_WEBHOOK_PATH=/api/telegram/webhook
 Set, inspect, or delete the webhook explicitly:
 
 ```bash
+pnpm telegram:webhook-config-check
 pnpm telegram:set-webhook
 pnpm telegram:webhook-info
 pnpm telegram:delete-webhook
 ```
 
-When `TELEGRAM_WEBHOOK_SECRET` is set, the backend validates Telegram's `X-Telegram-Bot-Api-Secret-Token` header. The backend does not call `setWebhook` automatically on boot.
+`telegram:webhook-config-check` validates webhook env without calling `setWebhook`. When `TELEGRAM_WEBHOOK_SECRET` is set, the backend validates Telegram's `X-Telegram-Bot-Api-Secret-Token` header. The backend does not call `setWebhook` automatically on boot.
 
 ## Telegram Demo Flow
 
@@ -303,6 +361,7 @@ Expected result: Telegram receives a compact proof-backed alert with:
 - Open Proof Tx button
 - View Signal button when `PUBLIC_APP_URL` is public
 - Reputation button when `PUBLIC_APP_URL` is public
+- Evaluation shown as roughly `in 30 minutes` for newly created pending signals
 
 Resolve exactly the created signal:
 
@@ -336,7 +395,13 @@ Remove-Item Env:\CONFIRM_RESOLVE_ALL
 
 Bulk operations do not send Telegram alerts unless `TELEGRAM_ALERTS_FOR_BULK=true`.
 
-Telegram does not allow `localhost` URLs in inline keyboard buttons. With `PUBLIC_APP_URL=http://localhost:3000`, dashboard links are still controlled by `PUBLIC_APP_URL`, but dashboard buttons are omitted. Use a public HTTPS URL when you want `View Signal` and `Reputation` buttons.
+Telegram does not allow `localhost` URLs in inline keyboard buttons. With `PUBLIC_APP_URL=http://localhost:3000`, dashboard links are still controlled by `PUBLIC_APP_URL`, but dashboard buttons are omitted and the backend logs `PUBLIC_APP_URL is local or not public; Telegram dashboard buttons disabled.` Use a public HTTPS URL when you want `View Signal` and `Reputation` buttons.
+
+Check URL readiness without sending Telegram messages:
+
+```bash
+pnpm app:url-check
+```
 
 Bot commands:
 
@@ -349,13 +414,18 @@ Bot commands:
 /signal contract:<id>
 /subscribe
 /unsubscribe
+/disconnect
+/alerts on
+/alerts off
+/alerts status
 /status
 /settings
 /minconfidence 70
-/types all
-/demo
+/minconfidence off
 /help
 ```
+
+The registered Telegram menu exposes `/start`, `/latest`, `/pending`, `/reputation`, `/signal`, `/subscribe`, `/unsubscribe`, `/settings`, `/status`, `/alerts`, `/minconfidence`, `/disconnect`, and `/help`.
 
 If `TELEGRAM_ENABLED=false`, the backend logs `Telegram disabled.` and does not start polling. If `TELEGRAM_ENABLED=true` but `TELEGRAM_BOT_TOKEN` is missing, polling and alerts are disabled with a warning. If `TELEGRAM_CHAT_ID` is missing, bot commands can still work, but auto-alerts are disabled with a warning.
 
@@ -369,7 +439,17 @@ From the repo root:
 pnpm proof:seed-curated
 ```
 
-The seed script does not clean the database. It creates 10 proof-ready signals for the current proof network: 8 resolved and 2 pending, with Correct, Failed, and Inconclusive outcomes across different signal types.
+The seed script does not clean the database. It creates 10 proof-ready historical-mainnet-style demo signals for the current proof network, with Correct, Failed, Inconclusive, and Pending outcomes across different signal types.
+
+Optional balanced demo reputation profile:
+
+```powershell
+$env:DEMO_REPUTATION_PROFILE="balanced"
+pnpm proof:seed-curated
+Remove-Item Env:\DEMO_REPUTATION_PROFILE
+```
+
+The balanced profile keeps at least one failed, one inconclusive, and one pending signal, and targets roughly 55-65% accuracy for a more neutral curated demo dataset. It is opt-in and does not alter existing records.
 
 In `local` and `testnet` modes, real `commitSignal` and `resolveSignal` transactions are required. If a chain write fails, the script stops and reports the error. In `mock` mode, mock hashes are allowed and the UI marks them as mock. Seed/bulk operations suppress Telegram alerts by default; set `TELEGRAM_ALERTS_FOR_BULK=true` only when you intentionally want those messages.
 
@@ -465,21 +545,23 @@ pnpm dev
 
 5. Open the Telegram deep link and wait for the bot confirmation.
 
-6. Create one pending signal:
+6. Click `Send Test Alert` to verify the connected chat without creating a signal or spending gas.
+
+7. Create one pending signal:
 
 ```bash
 pnpm telegram:demo-flow
 ```
 
-7. Show Telegram alert, then tap `Open Proof Tx` and `View Signal` from Telegram.
+8. Show Telegram alert, then tap `Open Proof Tx` and `View Signal` from Telegram.
 
-8. Optional curated dataset:
+9. Optional curated dataset:
 
 ```bash
 pnpm proof:seed-curated
 ```
 
-9. Resolve exactly one signal:
+10. Resolve exactly one signal:
 
 ```powershell
 $env:RESOLVE_AFTER_CREATE="true"
@@ -493,18 +575,19 @@ or:
 pnpm proof:resolve --signal-id <DB_SIGNAL_ID>
 ```
 
-10. Show Telegram resolve update, then open:
+11. Show Telegram resolve update, then open:
 
 ```text
 http://localhost:3000/dashboard
 http://localhost:3000/reputation
 ```
 
-11. Demo video checklist:
+12. Demo video checklist:
 
 - Show dashboard runtime panel.
 - Click Connect Telegram Alerts.
 - Show Telegram subscription confirmation.
+- Send a test alert from the dashboard.
 - Show Mantle Sepolia contract link.
 - Create proof signal.
 - Show Telegram proof-backed alert.
@@ -527,6 +610,7 @@ pnpm prisma validate
 pnpm prisma generate
 pnpm check
 pnpm build
+pnpm exec tsc -p scripts/tsconfig.json --noEmit
 
 cd ../frontend
 pnpm lint

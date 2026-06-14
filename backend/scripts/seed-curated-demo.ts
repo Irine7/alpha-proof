@@ -22,7 +22,7 @@ const curatedKinds: MarketEventType[] = [
   "liquidity_removal"
 ];
 
-const resolvedOutcomes: SignalOutcome[] = [
+const defaultResolvedOutcomes: SignalOutcome[] = [
   "Correct",
   "Failed",
   "Correct",
@@ -32,6 +32,26 @@ const resolvedOutcomes: SignalOutcome[] = [
   "Failed",
   "Failed"
 ];
+
+const balancedResolvedOutcomes: SignalOutcome[] = [
+  "Correct",
+  "Failed",
+  "Correct",
+  "Inconclusive",
+  "Correct",
+  "Correct",
+  "Failed",
+  "Correct",
+  "Failed"
+];
+
+function reputationProfile() {
+  return process.env.DEMO_REPUTATION_PROFILE === "balanced" ? "balanced" : "default";
+}
+
+function resolvedOutcomesForProfile(): SignalOutcome[] {
+  return reputationProfile() === "balanced" ? balancedResolvedOutcomes : defaultResolvedOutcomes;
+}
 
 function explorerTxUrl(txHash?: string | null) {
   const proof = getProofNetworkConfig();
@@ -87,6 +107,8 @@ function assertCuratedDiversity(signals: Awaited<ReturnType<typeof createDemoSig
 
 async function main() {
   const proof = getProofNetworkConfig();
+  const profile = reputationProfile();
+  const resolvedOutcomes = resolvedOutcomesForProfile();
   const created = [];
 
   for (const kind of curatedKinds) {
@@ -134,6 +156,7 @@ async function main() {
         chainMode: config.chainMode,
         marketDataMode: config.marketDataMode,
         proofNetwork: shouldUseMockChain() ? "Mock" : proof.proofNetwork,
+        demoReputationProfile: profile,
         chainId: proof.chainId,
         contractAddress: config.signalRegistryAddress || null,
         proofNetworkKey: currentProofNetworkKey(),

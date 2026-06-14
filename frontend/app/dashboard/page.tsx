@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DemoControls } from "../../components/DemoControls";
 import { RuntimeStatusPanel } from "../../components/RuntimeStatusPanel";
-import { SignalCard } from "../../components/SignalCard";
+import { SignalList } from "../../components/SignalList";
 import { StatCard } from "../../components/StatCard";
 import { TelegramConnectCard } from "../../components/TelegramConnectCard";
 import { getRuntimeStatus, getSignals, getStats } from "../../lib/api";
@@ -48,9 +48,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
         </div>
       </div>
 
-      <RuntimeStatusPanel runtime={runtime} />
-
       <TelegramConnectCard />
+
+      <RuntimeStatusPanel runtime={runtime} />
 
       {stats.pendingSignals > 0 ? (
         <section className="mb-8 border border-amber-300/20 bg-amber-300/5 p-4 text-sm text-amber-100">
@@ -95,17 +95,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
             </div>
           </div>
         </div>
-        {signals.length ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            {signals.map((signal) => (
-              <SignalCard key={signal.id} signal={signal} runtime={runtime} />
-            ))}
-          </div>
-        ) : (
-          <div className="border border-white/10 bg-[#0a0a0a] p-8 text-center text-zinc-500 font-mono text-sm">
-            No signals yet. Start the backend, run Prisma setup, then click “Create Proof Signal”
-          </div>
-        )}
+        <SignalList key={`${showAllRecords}:${showAllNetworks}`} signals={signals} runtime={runtime} />
       </section>
     </main>
   );

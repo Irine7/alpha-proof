@@ -22,10 +22,16 @@
     "telegram:test": "tsx scripts/test-telegram-alert.ts",
     "telegram:test:reputation": "tsx scripts/test-telegram-reputation.ts",
     "telegram:test-subscription": "tsx scripts/test-telegram-subscription.ts",
+    "telegram:test-delivery-rules": "tsx scripts/test-telegram-delivery-rules.ts",
     "telegram:demo-flow": "tsx scripts/telegram-demo-flow.ts",
+    "telegram:set-commands": "tsx scripts/telegram-commands.ts set",
+    "telegram:get-commands": "tsx scripts/telegram-commands.ts get",
+    "telegram:delete-commands": "tsx scripts/telegram-commands.ts delete",
     "telegram:set-webhook": "tsx scripts/telegram-webhook.ts set",
     "telegram:delete-webhook": "tsx scripts/telegram-webhook.ts delete",
-    "telegram:webhook-info": "tsx scripts/telegram-webhook.ts info"
+    "telegram:webhook-info": "tsx scripts/telegram-webhook.ts info",
+    "telegram:webhook-config-check": "tsx scripts/telegram-webhook-config-check.ts",
+    "app:url-check": "tsx scripts/app-url-check.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.3.1",

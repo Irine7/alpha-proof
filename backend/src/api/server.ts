@@ -6,7 +6,18 @@ import { resolvePendingDemoSignals } from "../agent/evaluators/demoEvaluator.js"
 import type { DemoEventKind } from "../types.js";
 import { chainRuntimeStatus, config } from "../config.js";
 import { getTelegramBotUsername, handleTelegramWebhookUpdate } from "../telegram/bot.js";
-import { createConnectCode, getConnectCodeStatus, getSubscriberByChatId, maskChatId } from "../telegram/subscriptions.js";
+import { sendTelegramConnectionTestAlert } from "../telegram/notifier.js";
+import {
+  createConnectCode,
+  disconnectConnectCode,
+  getConnectCodeStatus,
+  getSubscriberByChatId,
+  maskChatId,
+  subscriberSignalTypes
+} from "../telegram/subscriptions.js";
+
+const telegramTestAlertRateLimit = new Map<string, number>();
+const TELEGRAM_TEST_ALERT_RATE_LIMIT_MS = 30_000;
 
 export function createServer() {
   const app = express();
@@ -110,13 +121,105 @@ export function createServer() {
         res.status(404).json({ error: "Connect code not found" });
         return;
       }
+      const subscriber = connectCode.chatId ? await getSubscriberByChatId(connectCode.chatId) : null;
 
       res.json({
         status: connectCode.status,
-        connected: connectCode.status === "used",
+        connected: connectCode.status === "used" && Boolean(subscriber),
         chatIdMasked: maskChatId(connectCode.chatId),
         username: connectCode.username || null,
-        usedAt: connectCode.usedAt
+        usedAt: connectCode.usedAt,
+        subscriber: subscriber
+          ? {
+              isActive: subscriber.isActive,
+              subscribedToCreates: subscriber.subscribedToCreates,
+              subscribedToResolves: subscriber.subscribedToResolves,
+              minConfidence: subscriber.minConfidence,
+              signalTypes: subscriberSignalTypes(subscriber),
+              username: subscriber.username,
+              chatIdMasked: maskChatId(subscriber.chatId)
+            }
+          : null
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/telegram/connect-code/:code/test-alert", async (req, res, next) => {
+    try {
+      const connectCode = await getConnectCodeStatus(req.params.code);
+      if (!connectCode) {
+        res.status(404).json({ error: "Connect code not found" });
+        return;
+      }
+
+      if (connectCode.status !== "used" || !connectCode.chatId) {
+        res.status(409).json({ error: "Connect Telegram first" });
+        return;
+      }
+
+      const subscriber = await getSubscriberByChatId(connectCode.chatId);
+      if (!subscriber) {
+        res.status(409).json({ error: "Telegram subscriber not found" });
+        return;
+      }
+
+      const rateLimitKey = `${connectCode.code}:${connectCode.chatId}`;
+      const now = Date.now();
+      const lastSentAt = telegramTestAlertRateLimit.get(rateLimitKey) || 0;
+      const retryAfterMs = TELEGRAM_TEST_ALERT_RATE_LIMIT_MS - (now - lastSentAt);
+      if (retryAfterMs > 0) {
+        res.status(429).json({
+          error: "Please wait before sending another test alert",
+          retryAfterSeconds: Math.ceil(retryAfterMs / 1000)
+        });
+        return;
+      }
+
+      const result = await sendTelegramConnectionTestAlert(connectCode.chatId, {
+        alertsDisabled: !subscriber.isActive
+      });
+
+      if (!result.sent) {
+        res.status(502).json({ error: result.reason || "Telegram test alert failed" });
+        return;
+      }
+
+      telegramTestAlertRateLimit.set(rateLimitKey, now);
+      res.json({
+        sent: true,
+        chatIdMasked: maskChatId(connectCode.chatId),
+        alertsEnabled: subscriber.isActive
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/telegram/connect-code/:code/disconnect", async (req, res, next) => {
+    try {
+      const result = await disconnectConnectCode(req.params.code);
+      if (result.status === "not_found") {
+        res.status(404).json({ error: "Connect code not found" });
+        return;
+      }
+
+      res.json({
+        status: "disconnected",
+        connected: false,
+        chatIdMasked: maskChatId(result.connectCode?.chatId),
+        subscriber: result.subscriber
+          ? {
+              isActive: result.subscriber.isActive,
+              subscribedToCreates: result.subscriber.subscribedToCreates,
+              subscribedToResolves: result.subscriber.subscribedToResolves,
+              minConfidence: result.subscriber.minConfidence,
+              signalTypes: subscriberSignalTypes(result.subscriber),
+              username: result.subscriber.username,
+              chatIdMasked: maskChatId(result.subscriber.chatId)
+            }
+          : null
       });
     } catch (error) {
       next(error);

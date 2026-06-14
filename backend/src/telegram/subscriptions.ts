@@ -132,6 +132,45 @@ export async function getConnectCodeStatus(code: string) {
   return prisma.telegramConnectCode.findUnique({ where: { code } });
 }
 
+export async function disconnectTelegramChat(chatId: string) {
+  const subscriber = await prisma.telegramSubscriber.upsert({
+    where: { chatId },
+    create: {
+      chatId,
+      isActive: false,
+      lastSeenAt: new Date()
+    },
+    update: {
+      isActive: false,
+      lastSeenAt: new Date()
+    }
+  });
+
+  await prisma.telegramConnectCode.updateMany({
+    where: {
+      chatId,
+      status: "used"
+    },
+    data: {
+      status: "disconnected"
+    }
+  });
+
+  return subscriber;
+}
+
+export async function disconnectConnectCode(code: string) {
+  const connectCode = await getConnectCodeStatus(code);
+  if (!connectCode) return { status: "not_found" as const, connectCode: null, subscriber: null };
+  if (connectCode.status !== "used" || !connectCode.chatId) {
+    return { status: connectCode.status as "pending" | "expired" | "disconnected", connectCode, subscriber: null };
+  }
+
+  const subscriber = await disconnectTelegramChat(connectCode.chatId);
+  const disconnected = await prisma.telegramConnectCode.findUnique({ where: { code } });
+  return { status: "disconnected" as const, connectCode: disconnected, subscriber };
+}
+
 export async function unsubscribe(chatId: string) {
   return prisma.telegramSubscriber.upsert({
     where: { chatId },
@@ -194,4 +233,39 @@ export function signalPassesSubscriberFilters(
   }
 
   return true;
+}
+
+export function subscriberReceivesAlert(
+  signal: Pick<Signal, "confidence" | "signalType">,
+  subscriber: {
+    isActive: boolean;
+    subscribedToCreates: boolean;
+    subscribedToResolves: boolean;
+    minConfidence: number | null;
+    signalTypes: Prisma.JsonValue | null;
+  },
+  kind: "create" | "resolve"
+) {
+  if (!subscriber.isActive) return false;
+  if (kind === "create" && !subscriber.subscribedToCreates) return false;
+  if (kind === "resolve" && !subscriber.subscribedToResolves) return false;
+  return signalPassesSubscriberFilters(signal, subscriber);
+}
+
+export function getSignalFilterNote(
+  signal: Pick<Signal, "confidence" | "signalType">,
+  subscriber: { minConfidence: number | null; signalTypes: Prisma.JsonValue | null } | null
+) {
+  if (!subscriber) return null;
+
+  if (subscriber.minConfidence !== null && signal.confidence < subscriber.minConfidence) {
+    return `Note: this signal is below your current ${subscriber.minConfidence}% alert threshold.\nManual lookup still shows it.`;
+  }
+
+  const signalTypes = subscriberSignalTypes(subscriber);
+  if (signalTypes && !signalTypes.some((signalType) => signalType.toLowerCase() === signal.signalType.toLowerCase())) {
+    return "Note: this signal is outside your selected alert signal types.\nManual lookup still shows it.";
+  }
+
+  return null;
 }

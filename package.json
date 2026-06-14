@@ -22,10 +22,16 @@
     "telegram:test": "pnpm --filter @alphaproof/backend telegram:test",
     "telegram:test:reputation": "pnpm --filter @alphaproof/backend telegram:test:reputation",
     "telegram:test-subscription": "pnpm --filter @alphaproof/backend telegram:test-subscription",
+    "telegram:test-delivery-rules": "pnpm --filter @alphaproof/backend telegram:test-delivery-rules",
     "telegram:demo-flow": "pnpm --filter @alphaproof/backend telegram:demo-flow",
+    "telegram:set-commands": "pnpm --filter @alphaproof/backend telegram:set-commands",
+    "telegram:get-commands": "pnpm --filter @alphaproof/backend telegram:get-commands",
+    "telegram:delete-commands": "pnpm --filter @alphaproof/backend telegram:delete-commands",
     "telegram:set-webhook": "pnpm --filter @alphaproof/backend telegram:set-webhook",
     "telegram:delete-webhook": "pnpm --filter @alphaproof/backend telegram:delete-webhook",
-    "telegram:webhook-info": "pnpm --filter @alphaproof/backend telegram:webhook-info"
+    "telegram:webhook-info": "pnpm --filter @alphaproof/backend telegram:webhook-info",
+    "telegram:webhook-config-check": "pnpm --filter @alphaproof/backend telegram:webhook-config-check",
+    "app:url-check": "pnpm --filter @alphaproof/backend app:url-check"
   },
   "engines": {
     "node": ">=20.0.0",

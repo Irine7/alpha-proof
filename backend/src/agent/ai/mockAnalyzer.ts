@@ -11,7 +11,7 @@ export function analyzeWithMockAi(event: MarketEvent, candidate: SignalCandidate
   const sizeScore = Math.min(18, Math.floor(observedUsd / 25000));
   const activityScore = Math.min(10, (event.txCount || 1) * 2);
   const confidence = Math.min(94, 58 + sizeScore + activityScore);
-  const windowMinutes = event.kind === "liquidity_removal" || event.kind === "exit_risk" ? 20 : 30;
+  const windowMinutes = 30;
   const evaluationTime = new Date(Date.now() + windowMinutes * 60 * 1000);
 
   const valueText =

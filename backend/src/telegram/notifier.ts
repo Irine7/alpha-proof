@@ -1,12 +1,17 @@
 import type { Signal } from "../generated/prisma/index.js";
 import { config, shouldUseMockChain } from "../config.js";
 import type { getAgentStats } from "../db/signals.js";
-import { formatReputation, formatResolvedAlert, formatSignalAlert } from "./formatter.js";
+import { formatReputation, formatResolvedAlert, formatSignalAlert, formatTelegramConnectionTestAlert } from "./formatter.js";
 import { getTelegramBot, htmlMessageOptions, reputationKeyboard, signalKeyboard, warnMissingChat, warnMissingToken } from "./bot.js";
-import { deactivateSubscriber, listActiveSubscribers, signalPassesSubscriberFilters } from "./subscriptions.js";
+import { deactivateSubscriber, listActiveSubscribers, subscriberReceivesAlert } from "./subscriptions.js";
 import type { TelegramAlertKind, TelegramSendResult } from "./types.js";
 
 type AgentStats = Awaited<ReturnType<typeof getAgentStats>>;
+type AlertSubscriber = Awaited<ReturnType<typeof listActiveSubscribers>>[number];
+export type TelegramRecipientSubscriber = Pick<
+  AlertSubscriber,
+  "chatId" | "isActive" | "subscribedToCreates" | "subscribedToResolves" | "minConfidence" | "signalTypes"
+>;
 
 function alertsEnabled(kind: TelegramAlertKind) {
   return kind === "create" ? config.telegramAlertsOnCreate : config.telegramAlertsOnResolve;
@@ -22,25 +27,38 @@ function canSend(kind: TelegramAlertKind): TelegramSendResult {
   return { sent: true };
 }
 
-function shouldReceiveKind(
-  subscriber: { subscribedToCreates: boolean; subscribedToResolves: boolean },
-  kind: TelegramAlertKind
+function canSendTelegramMessage(): TelegramSendResult {
+  if (!config.telegramEnabled) return { sent: false, reason: "Telegram disabled" };
+  if (!config.telegramBotToken) {
+    warnMissingToken();
+    return { sent: false, reason: "Telegram bot token missing" };
+  }
+  return { sent: true };
+}
+
+export function selectTelegramRecipients(
+  signal: Pick<Signal, "confidence" | "signalType">,
+  kind: TelegramAlertKind,
+  subscribers: TelegramRecipientSubscriber[],
+  options: { adminChatId?: string | null; adminAlerts?: boolean } = {}
 ) {
-  return kind === "create" ? subscriber.subscribedToCreates : subscriber.subscribedToResolves;
+  const recipients = subscribers
+    .filter((subscriber) => subscriberReceivesAlert(signal, subscriber, kind))
+    .map((subscriber) => subscriber.chatId);
+
+  if (options.adminChatId && (options.adminAlerts || subscribers.length === 0)) {
+    recipients.push(options.adminChatId);
+  }
+
+  return [...new Set(recipients)];
 }
 
 async function alertRecipients(signal: Signal, kind: TelegramAlertKind) {
   const subscribers = await listActiveSubscribers();
-  const recipients = subscribers
-    .filter((subscriber) => shouldReceiveKind(subscriber, kind))
-    .filter((subscriber) => signalPassesSubscriberFilters(signal, subscriber))
-    .map((subscriber) => subscriber.chatId);
-
-  if (config.telegramChatId && (config.telegramAdminAlerts || subscribers.length === 0)) {
-    recipients.push(config.telegramChatId);
-  }
-
-  return [...new Set(recipients)];
+  return selectTelegramRecipients(signal, kind, subscribers, {
+    adminChatId: config.telegramChatId,
+    adminAlerts: config.telegramAdminAlerts
+  });
 }
 
 function isBlockedByUser(error: unknown) {
@@ -74,7 +92,11 @@ async function sendConfiguredMessage(signal: Signal, text: string, kind: Telegra
 
   const recipients = await alertRecipients(signal, kind);
   if (!recipients.length) {
-    warnMissingChat();
+    if (!config.telegramChatId) {
+      warnMissingChat();
+    } else {
+      console.warn(`Telegram ${kind} alert skipped for signal #${signal.id}: no active recipients matched alert preferences.`);
+    }
     return { sent: false, reason: "No Telegram recipients configured" };
   }
 
@@ -129,6 +151,32 @@ export async function sendTelegramReputationTest(stats: AgentStats) {
     return { sent: true };
   } catch (error) {
     console.error("Telegram reputation test failed:", error instanceof Error ? error.message : "Unknown Telegram send error");
+    return { sent: false, reason: "Telegram send failed" };
+  }
+}
+
+export async function sendTelegramConnectionTestAlert(chatId: string, options: { alertsDisabled?: boolean } = {}) {
+  const readiness = canSendTelegramMessage();
+  if (!readiness.sent) return readiness;
+
+  const activeBot = getTelegramBot();
+  if (!activeBot) return { sent: false, reason: "Telegram bot unavailable" };
+
+  try {
+    await activeBot.telegram.sendMessage(
+      chatId,
+      formatTelegramConnectionTestAlert(Boolean(options.alertsDisabled)),
+      htmlMessageOptions(reputationKeyboard())
+    );
+    return { sent: true };
+  } catch (error) {
+    console.error(
+      `Telegram connection test failed for chat ${chatId.slice(0, 3)}...:`,
+      error instanceof Error ? error.message : "Unknown Telegram send error"
+    );
+    if (isBlockedByUser(error)) {
+      await deactivateSubscriber(chatId).catch(() => undefined);
+    }
     return { sent: false, reason: "Telegram send failed" };
   }
 }
