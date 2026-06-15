@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { TelegramNavControl } from "../components/TelegramNavControl";
 import "./globals.css";
@@ -28,8 +29,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <nav className="fixed w-full z-50 bg-[#020403]/92 backdrop-blur-md border-b border-white/10">
           <div className="flex h-24 items-center justify-between px-6 md:px-[58px]">
             <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-              <span className="grid h-7 w-7 place-items-center rounded-[7px] bg-mantle text-sm font-black text-black shadow-[0_0_28px_rgba(0,224,164,0.42)]">
-                A
+              <span className="grid h-9 w-9 place-items-center overflow-hidden drop-shadow-[0_0_18px_rgba(0,224,164,0.55)]">
+                <Image src="/assets/l.png" alt="" width={54} height={54} priority className="h-9 w-9 object-contain" />
               </span>
               <span className="text-white font-bold tracking-tight">ALPHAPROOF<span className="text-zinc-500">.AI</span></span>
             </Link>
