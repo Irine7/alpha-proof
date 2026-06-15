@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+
+.vercel
+dist
+node_modules
+*.log
+*.db
+*.db-journal
+prisma/*.db
+prisma/*.db-journal
